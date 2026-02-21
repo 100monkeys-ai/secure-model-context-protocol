@@ -240,7 +240,7 @@ Every SMCP operation should publish domain events to an audit event store. These
 | `ToolCallAuthorized` | Tool call passed PolicyEngine; forwarded to Tool Server |
 | `PolicyViolationBlocked` | Tool call rejected; violation type and details logged |
 | `SignatureVerificationFailed` | Envelope signature invalid |
-| `ContextTokenExpired` | Agent's JWT expired mid-session |
+| `SecurityTokenExpired` | Agent's JWT expired mid-session |
 | `SessionRevoked` | Gateway revoked the session (e.g., execution cancelled) |
 
 ---

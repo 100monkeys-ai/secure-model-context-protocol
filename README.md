@@ -53,7 +53,7 @@ Without SMCP, an MCP gateway cannot verify *which* agent is making a request, *w
 | --------- | ------------- |
 | **SmcpEnvelope** | Signed wrapper around each MCP tool call. Wire field: `security_token`. |
 | **Attestation** | One-time handshake where the agent proves its Ed25519 public key + workload ID and receives a signed JWT. |
-| **ContextToken / security_token** | JWT issued by the Gateway binding the agent to a named `SecurityContext`. |
+| **SecurityToken / security_token** | JWT issued by the Gateway binding the agent to a named `SecurityContext`. |
 | **SecurityContext** | Named permission boundary (e.g., `"research-safe"`) defining `capabilities[]` and `deny_list[]`. |
 | **Capability** | Fine-grained permission: tool pattern + optional path/command/domain allowlists + rate limit. |
 | **PolicyEngine** | Evaluates each tool call: deny list first → match capabilities → default deny. |

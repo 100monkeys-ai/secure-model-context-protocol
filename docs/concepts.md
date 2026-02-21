@@ -43,9 +43,9 @@ Token lifetime: recommended 1 hour, maximum 24 hours. After expiry, re-attest to
 
 ---
 
-## ContextToken / security_token
+## SecurityToken / security_token
 
-The **ContextToken** (called `security_token` in the wire format) is a JWT issued by the Gateway at attestation. It proves:
+The **SecurityToken** (called `security_token` in the wire format) is a JWT issued by the Gateway at attestation. It proves:
 
 - **Who** the agent is (`sub` claim: `workload_id`)
 - **What** it is authorized to do (`ctx`/`scp` claim: `SecurityContext` name)
@@ -167,7 +167,7 @@ SMCP prevents this by:
 | ------ | ----------- |
 | **SmcpEnvelope** | Signed wrapper around each MCP tool call |
 | **Attestation** | One-time handshake; agent proves public key + workload ID, receives JWT |
-| **security_token** | JWT (ContextToken) binding agent to SecurityContext; wire format field name |
+| **security_token** | JWT (SecurityToken) binding agent to SecurityContext; wire format field name |
 | **SecurityContext** | Named permission boundary with capabilities + deny list |
 | **Capability** | Fine-grained allow rule with optional path/command/domain/rate constraints |
 | **SmcpSession** | Aggregate: agent keypair + token + SecurityContext for one execution |
