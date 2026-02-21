@@ -122,12 +122,6 @@ client.dispose();
 
 ---
 
-## Field Name Note
-
-The SMCP wire format uses `security_token` as the envelope field name — this is authoritative per the RFC. The AEGIS orchestrator's internal Rust implementation uses `context_token` as a struct field name. This is an internal implementation detail only; the wire format and all SDK implementations use `security_token`. See [docs/concepts.md](docs/concepts.md#field-name-note) for more detail.
-
----
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues go to `security@100monkeys.ai` — see [SECURITY.md](SECURITY.md).
