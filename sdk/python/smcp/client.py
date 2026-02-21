@@ -7,7 +7,9 @@ from .envelope import create_smcp_envelope
 
 class SMCPError(Exception):
     """Base exception for SMCP protocol errors."""
-    pass
+    def __init__(self, message: str, status_code: Optional[int] = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 class SMCPClient:
     """

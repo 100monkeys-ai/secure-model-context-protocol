@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { createCanonicalMessage, createSmcpEnvelope, McpPayload } from '../src/envelope';
 import { Ed25519Key } from '../src/crypto';
 
