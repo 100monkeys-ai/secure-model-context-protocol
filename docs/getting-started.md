@@ -10,7 +10,7 @@ This guide walks you through making your first cryptographically secured tool ca
 - A `SecurityContext` name defined on that Gateway (e.g., `research-safe`)
 - A `workload_id` that identifies your current execution session (e.g., a UUID or execution ID)
 
-If you are deploying the AEGIS orchestrator, see the [Integration Guide](integration-guide.md) for how to configure `SecurityContext`s and expose the Gateway endpoint.
+If you are deploying a Gateway, see the [Integration Guide](integration-guide.md) for how to configure `SecurityContext`s and expose the Gateway endpoint.
 
 ---
 
@@ -214,5 +214,5 @@ The **`security_token`** field is the canonical wire format name (per RFC). The 
 
 - [Concepts](concepts.md) — understand `SecurityContext`, `Capability`, `PolicyEngine`, and the full domain model
 - [SDK Reference](sdk-reference.md) — complete Python and TypeScript API documentation
-- [Integration Guide](integration-guide.md) — deploy a Gateway, define `SecurityContext`s, and integrate SMCP into AEGIS
+- [Integration Guide](integration-guide.md) — deploy a Gateway, define `SecurityContext`s, and integrate SMCP into your orchestration layer
 - [Security](security.md) — threat model, cryptographic choices, and compliance details

@@ -1,6 +1,6 @@
 # SMCP Concepts
 
-This document defines the core terms and concepts used throughout SMCP. Use the [Ubiquitous Language](../RFC/smcp-v1-specification.md) consistently — the same terms appear in the RFC, SDKs, and AEGIS orchestrator implementation.
+This document defines the core terms and concepts used throughout SMCP. Use the [Ubiquitous Language](../RFC/smcp-v1-specification.md) consistently — the same terms appear in the RFC, SDKs, and Gateway implementations.
 
 ---
 
@@ -36,7 +36,7 @@ The **SmcpEnvelope** is the signed wrapper sent by an agent on every tool call. 
 
 1. Generates an ephemeral Ed25519 keypair (never persisted to disk).
 2. Sends the public key + `workload_id` + requested `security_scope` to `POST /smcp/v1/attest`.
-3. The Gateway verifies the workload identity (in AEGIS: via Docker API / container ID).
+3. The Gateway verifies the workload identity (e.g., via container ID or runtime API).
 4. The Gateway issues a signed JWT (`security_token`) binding the agent public key to a named `SecurityContext`.
 
 Token lifetime: recommended 1 hour, maximum 24 hours. After expiry, re-attest to get a fresh token.
@@ -68,7 +68,7 @@ The **ContextToken** (called `security_token` in the wire format) is a JWT issue
 }
 ```
 
-The token is signed by the Gateway's root key (in AEGIS: via OpenBao Transit Engine). Agents cannot forge or modify it.
+The token is signed by the Gateway's root key (managed via KMS/HSM — e.g., OpenBao or AWS KMS). Agents cannot forge or modify it.
 
 ---
 
@@ -137,7 +137,7 @@ A new session begins on each `attest()` call. Sessions are not shared across exe
 
 The **PolicyEngine** is the Gateway component that evaluates every tool call against the agent's `SecurityContext`. It implements the evaluation order described above (deny list → capabilities → default deny).
 
-In the AEGIS orchestrator, the `PolicyEngine` is implemented using [Cedar](https://www.cedarpolicy.com/) — a declarative authorization policy language from AWS. Cedar enables fine-grained, auditable policy evaluation with formal verification properties.
+The `PolicyEngine` can be implemented using [Cedar](https://www.cedarpolicy.com/) — a declarative authorization policy language from AWS. Cedar enables fine-grained, auditable policy evaluation with formal verification properties.
 
 ---
 
@@ -158,14 +158,6 @@ SMCP prevents this by:
 - Evaluating policy at the Gateway on every call, regardless of which physical channel the request arrived on
 
 ---
-
-## Field Name Note
-
-The SMCP wire format uses **`security_token`** as the envelope field name. This is authoritative per the RFC specification.
-
-The AEGIS orchestrator's internal Rust implementation uses **`context_token`** as the struct field name. This is an internal implementation detail — the Rust code maps to/from `security_token` during serialization. SDK implementations (Python, TypeScript) and all external/wire usage use `security_token`.
-
-If you see `context_token` in AEGIS source code or ADR-035, it refers to the same concept. The wire format is always `security_token`.
 
 ---
 

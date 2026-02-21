@@ -172,6 +172,32 @@ This ensures that any two implementations that agree on the inputs will produce 
 
 ---
 
+### `verify_smcp_envelope`
+
+Server-side primitive to verify an incoming `SmcpEnvelope`.
+
+```python
+from smcp.server import verify_smcp_envelope
+
+mcp_payload = verify_smcp_envelope(
+    envelope: dict,
+    public_key_bytes: bytes,
+    max_age_seconds: int = 30,
+) -> dict
+```
+
+| Parameter | Type | Description |
+| ----------- | ------ | ------------- |
+| `envelope` | `dict` | The incoming JSON payload containing the `SmcpEnvelope` |
+| `public_key_bytes` | `bytes` | The raw 32-byte Ed25519 public key of the agent |
+| `max_age_seconds` | `int` | The maximum allowed age of the envelope in seconds (default: 30) |
+
+**Returns** the verified `mcp_payload` if successful.
+
+**Raises** `SMCPError` with the appropriate status code (1000-1005) if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed replay window.
+
+---
+
 ## TypeScript SDK (`@100monkeys/smcp`)
 
 ### `SMCPClient` (TypeScript SDK)
@@ -351,6 +377,32 @@ const messageBytes = createCanonicalMessage(
 ```
 
 Produces the UTF-8 canonical JSON byte sequence (sorted keys, no whitespace, integer timestamp) over which the signature is computed. Deterministic across Python and TypeScript implementations given the same inputs.
+
+---
+
+### `verifySmcpEnvelope`
+
+Server-side primitive to verify an incoming `SmcpEnvelope`.
+
+```typescript
+import { verifySmcpEnvelope } from "@100monkeys/smcp/server";
+
+const mcpPayload = await verifySmcpEnvelope(
+  envelope: any,
+  publicKeyBytes: Uint8Array,
+  maxAgeSeconds: number = 30,
+): Promise<McpPayload>
+```
+
+| Parameter | Type | Description |
+| ----------- | ------ | ------------- |
+| `envelope` | `any` | The incoming JSON payload containing the `SmcpEnvelope` |
+| `publicKeyBytes` | `Uint8Array` | The raw 32-byte Ed25519 public key of the agent |
+| `maxAgeSeconds` | `number` | The maximum allowed age of the envelope in seconds (default: 30) |
+
+**Returns** the verified `mcpPayload` object if successful.
+
+**Throws** `SMCPError` if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed ±30s replay window.
 
 ---
 

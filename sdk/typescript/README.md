@@ -182,6 +182,22 @@ Returns a `Uint8Array` of the UTF-8 encoded canonical JSON (sorted keys, no whit
 
 ---
 
+### `verifySmcpEnvelope`
+
+```typescript
+import { verifySmcpEnvelope } from "@100monkeys/smcp/server";
+
+const mcpPayload = await verifySmcpEnvelope(
+  envelope,
+  publicKeyBytes,
+  30 // maxAgeSeconds
+);
+```
+
+Server-side primitive to verify an incoming `SmcpEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
+
+---
+
 ## Error Handling
 
 ```typescript

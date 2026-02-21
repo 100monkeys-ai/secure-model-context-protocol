@@ -182,6 +182,22 @@ Returns the UTF-8 encoded bytes of the deterministic canonical JSON (sorted keys
 
 ---
 
+### `verify_smcp_envelope`
+
+```python
+from smcp.server import verify_smcp_envelope
+
+payload = verify_smcp_envelope(
+    envelope={"protocol": "smcp/v1", ...},
+    public_key_bytes=key.get_public_key_bytes(),
+    max_age_seconds=30
+)
+```
+
+Server-side primitive to verify an incoming `SmcpEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
+
+---
+
 ## Error Handling
 
 ```python

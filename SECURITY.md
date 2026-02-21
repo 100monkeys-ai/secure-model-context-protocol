@@ -68,7 +68,7 @@ SMCP is designed to defend against the following attack classes. Understanding t
 ## Key Management
 
 - **Client (agent) keys:** Ed25519 keypairs are ephemeral — generated per execution session, never written to disk, erased from memory when the session ends (`Ed25519Key.erase()`).
-- **Gateway signing keys:** The orchestrator's root signing key (used to issue `security_token` JWTs) is managed via KMS/HSM (OpenBao Transit Engine in the AEGIS deployment). Gateway keys must be rotated at least every 90 days.
+- **Gateway signing keys:** The orchestrator's root signing key (used to issue `security_token` JWTs) is managed via KMS/HSM (e.g., HashiCorp Vault, OpenBao, or AWS KMS). Gateway keys must be rotated at least every 90 days.
 
 ## Out of Scope
 
@@ -76,7 +76,7 @@ The following are deployment concerns, not SMCP protocol vulnerabilities:
 
 - TLS termination and certificate management
 - Network segmentation between orchestrator and tool servers
-- Host OS security and container isolation (covered by AEGIS runtime policies)
+- Host OS security and container isolation (covered by your host runtime's isolation policies)
 - DoS protection at the network layer
 
 ## Compliance

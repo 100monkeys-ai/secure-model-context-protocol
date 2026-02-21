@@ -117,7 +117,7 @@ client.dispose();
 | [`docs/getting-started.md`](docs/getting-started.md) | Zero-to-first-tool-call walkthrough |
 | [`docs/concepts.md`](docs/concepts.md) | Domain terminology and concept definitions |
 | [`docs/sdk-reference.md`](docs/sdk-reference.md) | Full Python + TypeScript API reference |
-| [`docs/integration-guide.md`](docs/integration-guide.md) | Integrating SMCP into AEGIS / deploying a gateway |
+| [`docs/integration-guide.md`](docs/integration-guide.md) | Deploying a Gateway and defining SecurityContexts |
 | [`docs/security.md`](docs/security.md) | Threat model, cryptography, compliance |
 
 ---

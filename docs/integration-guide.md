@@ -1,12 +1,12 @@
 # Integration Guide
 
-This guide explains how SMCP fits into the AEGIS orchestrator stack, how to deploy a Gateway, and how to define `SecurityContext`s for your agents.
+This guide explains how SMCP fits into an orchestrator stack, how to deploy a Gateway, and how to define `SecurityContext`s for your agents.
 
 ---
 
 ## Where SMCP Sits in the Stack
 
-SMCP operates at the **protocol layer**, on top of the physical security boundary already provided by the AEGIS Orchestrator Proxy (ADR-033).
+SMCP operates at the **protocol layer**, on top of the physical security boundary already provided by the Orchestrator Proxy pattern.
 
 ```markdown
 ┌─────────────────────────────────────────────────────────────┐
@@ -16,14 +16,14 @@ SMCP operates at the **protocol layer**, on top of the physical security boundar
                                │  SmcpEnvelope (over TLS)
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│             AEGIS Orchestrator — SmcpMiddleware              │
+│                   Orchestrator — SmcpMiddleware                │
 │                                                             │
-│  Physical layer  (ADR-033):  Orchestrator Proxy Pattern     │
+│  Physical layer:  Orchestrator Proxy Pattern                │
 │    - All agent tool calls physically route through here     │
 │    - Internal tools executed via Runtime::exec()            │
 │    - External tools executed with orchestrator credentials  │
 │                                                             │
-│  Protocol layer  (ADR-035):  SMCP                           │
+│  Protocol layer:  SMCP                                      │
 │    - AttestationService: verify workload, issue JWT         │
 │    - SmcpMiddleware: verify signature, validate JWT         │
 │    - PolicyEngine (Cedar): evaluate SecurityContext         │
@@ -37,7 +37,7 @@ SMCP operates at the **protocol layer**, on top of the physical security boundar
 └─────────────────────────────────────────────────────────────┘
 ```
 
-The physical proxy (ADR-033) ensures requests are routed correctly and credentials are held by the orchestrator, not agents. SMCP (ADR-035) adds protocol-level identity and authorization enforcement. Both layers are required; neither alone provides complete security.
+The physical proxy layer ensures requests are routed correctly and credentials are held by the orchestrator, not agents. SMCP adds protocol-level identity and authorization enforcement. Both layers are required; neither alone provides complete security.
 
 ---
 
@@ -183,10 +183,10 @@ For long-running agents, implement token renewal by calling `attest()` again bef
 
 ## Gateway Key Signing (OpenBao)
 
-In the AEGIS deployment, the Gateway does **not** hold its signing key directly. Instead, it uses the **OpenBao Transit Engine** (Encryption-as-a-Service):
+In a production deployment, the Gateway should **not** hold its signing key directly. Instead, it should use a **KMS Transit Engine** (Encryption-as-a-Service):
 
 ```markdown
-AttestationService  →  Transit Engine API (sign)  →  OpenBao
+AttestationService  →  Transit Engine API (sign)  →  KMS
                                                       │
                                                       └─ Ed25519 key
                                                          managed by KMS
@@ -201,10 +201,10 @@ The JWT is signed with EdDSA (`alg: EdDSA` in the JWT header). Verification requ
 
 ## Workload Identity Verification
 
-During attestation, the Gateway must verify that the `workload_id` maps to a real, currently running execution. In the AEGIS deployment:
+During attestation, the Gateway must verify that the `workload_id` maps to a real, currently running execution. For example:
 
-- **Docker runtime:** The Gateway checks the Docker API to confirm a container with the matching execution ID is running, and cross-references the submitted public key with what was registered at container start.
-- **Firecracker runtime (Phase 2):** Similar verification via the Firecracker management API, with VSOCK transport used instead of TCP.
+- **Container runtime:** The Gateway checks the container runtime API to confirm a container with the matching execution ID is running, and cross-references the submitted public key with what was registered at container start.
+- **VM runtime:** Similar verification via the hypervisor management API.
 
 This step prevents attackers from forging attestation requests with arbitrary `workload_id`s.
 
@@ -212,7 +212,7 @@ This step prevents attackers from forging attestation requests with arbitrary `w
 
 ## Multi-tenant Namespace Isolation
 
-In multi-tenant deployments, `SecurityContext`s are scoped to namespaces. The AEGIS deployment uses OpenBao namespaces to isolate per-tenant secrets and signing keys:
+In multi-tenant deployments, `SecurityContext`s are scoped to namespaces. For example, using OpenBao namespaces to isolate per-tenant secrets and signing keys:
 
 ```markdown
 tenant-acme/
@@ -229,9 +229,9 @@ Namespace isolation ensures that two tenants with a `SecurityContext` named `res
 
 ---
 
-## Integration with the AEGIS Event Bus
+## Audit Event Integration
 
-Every SMCP operation publishes domain events to the AEGIS event bus (ADR-030). These events power the audit trail, compliance reporting, and Cortex learning:
+Every SMCP operation should publish domain events to an audit event store. These events power the audit trail and compliance reporting:
 
 | Event | Description |
 | ------- | ------------- |
@@ -260,6 +260,5 @@ This is possible because the `SmcpEnvelope` is transport-agnostic: it contains a
 ## Further Reading
 
 - [RFC smcp-v1-specification](../RFC/smcp-v1-specification.md) — full protocol specification including test vectors and compliance mapping
-- [ADR-033: Orchestrator-Mediated MCP Tool Routing](https://github.com/100monkeys-ai/aegis-architecture/blob/main/adrs/033-orchestrator-mediated-mcp-tool-routing.md) — physical proxy layer
-- [ADR-034: OpenBao Secrets Management](https://github.com/100monkeys-ai/aegis-architecture/blob/main/adrs/034-openbao-secrets-management.md) — Gateway key management
-- [ADR-035: SMCP Implementation](https://github.com/100monkeys-ai/aegis-architecture/blob/main/adrs/035-smcp-implementation.md) — orchestrator Rust implementation details
+- [OpenBao Transit Engine](https://openbao.org/docs/secrets/transit/) — encryption-as-a-service for Gateway key signing
+- [Cedar Policy Language](https://www.cedarpolicy.com/) — declarative policy engine for SecurityContext evaluation

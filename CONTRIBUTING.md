@@ -30,7 +30,7 @@ Read the relevant section below before opening a PR. All contributions are subje
 
 The `RFC/smcp-v1-specification.md` document is the canonical definition of the SMCP wire format. SDKs conform to it.
 
-**Important naming note:** The wire format field is `security_token` (RFC-authoritative). The AEGIS orchestrator's internal Rust implementation uses `context_token` as a struct field name — this is an internal implementation detail and does not affect the wire format or SDK implementations.
+**Important naming note:** The wire format field is `security_token` (RFC-authoritative). Internal implementations may alias this field name in their type systems as needed, but must serialize to `security_token` on the wire. SDK implementations (Python, TypeScript) and all external/wire usage use `security_token`.
 
 ### Process
 

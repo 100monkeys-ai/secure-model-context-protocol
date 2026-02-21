@@ -46,7 +46,7 @@ SMCP was designed to address four primary attack classes against MCP-based AI ag
 **SMCP mitigation:**
 
 - SMCP enforces identity in the **agent → gateway** direction (this is where the Confused Deputy lives).
-- Tool server authenticity is the responsibility of the physical layer: the Orchestrator Proxy (ADR-033) routes to specific, known MCP server processes, and TLS (transport) prevents interception.
+- Tool server authenticity is the responsibility of the physical layer: the Orchestrator Proxy routes to specific, known MCP server processes, and TLS (transport) prevents interception.
 - SMCP composes with mutual TLS for environments that require tool server identity attestation.
 
 ---
@@ -135,7 +135,7 @@ This ensures Python and TypeScript implementations produce identical bytes for t
 
 - **Type:** Ed25519 (managed by HSM/KMS)
 - **Lifetime:** Minimum 90-day rotation period recommended.
-- **Storage:** In AEGIS deployments: OpenBao Transit Engine. The key material never leaves the HSM. The Gateway calls the Transit Engine's sign API — it does not hold the private key bytes in process memory.
+- **Storage:** In production deployments: a KMS such as OpenBao or AWS KMS. The key material never leaves the HSM. The Gateway calls the KMS sign API — it does not hold the private key bytes in process memory.
 - **Compromise response:** Rotate the key in OpenBao. All existing `security_token` JWTs signed with the old key will fail signature verification. Agents must re-attest.
 
 ---
@@ -165,7 +165,7 @@ The Gateway must log the following for each tool call (whether authorized or rej
 - Authorization decision (authorized / violation type)
 - Signature verification result
 
-In AEGIS, this is implemented via the event bus (ADR-030). `SmcpEvent` domain events are persisted and can be queried for forensic analysis, compliance reporting, and Cortex learning.
+Implementations should publish audit events to a persistent event store for forensic analysis and compliance reporting.
 
 The Ed25519 signature in the envelope provides **non-repudiation**: an agent cannot later deny having made a call, because only the holder of the ephemeral private key could have produced a valid signature. Combined with the audit log, this satisfies SOC 2 CC6.8 and GDPR Article 25 requirements.
 
@@ -192,7 +192,7 @@ SMCP explicitly does not address:
 
 - **TLS termination:** The transport layer between agent and Gateway must use TLS 1.3+. This is a deployment requirement, not a protocol requirement.
 - **Network segmentation:** Restricting which IP addresses can reach the Gateway is an infrastructure concern.
-- **Container / VM isolation:** Host OS security, kernel namespaces, and hypervisor-level isolation are covered by the AEGIS runtime (ADR-003, ADR-027).
+- **Container / VM isolation:** Host OS security, kernel namespaces, and hypervisor-level isolation are covered by your container or VM runtime.
 - **Tool Server security:** Tool Servers receive plain MCP JSON-RPC and must apply their own input validation.
 - **Key escrow / recovery:** Ephemeral client keys are intentionally non-recoverable. Gateway signing key backup/recovery is an operational concern for the KMS.
 
