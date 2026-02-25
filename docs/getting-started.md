@@ -20,7 +20,7 @@ If you are deploying a Gateway, see the [Integration Guide](integration-guide.md
 1. Generate ephemeral Ed25519 keypair (client side, never stored)
          │
          ▼
-2. Attest  ─── POST /smcp/v1/attest ──►  Gateway
+2. Attest  ─── POST /v1/smcp/attest ──►  Gateway
          ◄── security_token (JWT) ────────┘
          │
          ▼
@@ -31,7 +31,7 @@ If you are deploying a Gateway, see the [Integration Guide](integration-guide.md
          ├── payload         (standard MCP JSON-RPC tools/call)
          └── timestamp       (Unix integer, replay prevention)
          │
-         ─── POST /smcp/v1/tool-call ──►  Gateway
+         ─── POST /v1/smcp/invoke ──►  Gateway
                                           │  verify sig
                                           │  validate JWT
                                           │  check timestamp ±30s

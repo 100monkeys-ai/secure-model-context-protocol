@@ -40,7 +40,7 @@ class SMCPClient:
         self.key = Ed25519Key.generate()
         
         response = requests.post(
-            f"{self.gateway_url}/smcp/v1/attest",
+            f"{self.gateway_url}/v1/smcp/attest",
             json={
                 "public_key": self.key.get_public_key_base64(),
                 "workload_id": self.workload_id,
@@ -88,7 +88,7 @@ class SMCPClient:
         )
         
         response = requests.post(
-            f"{self.gateway_url}/smcp/v1/tool-call",
+            f"{self.gateway_url}/v1/smcp/invoke",
             json=envelope,
             timeout=30
         )

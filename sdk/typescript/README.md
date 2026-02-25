@@ -109,11 +109,11 @@ new SMCPClient(gatewayUrl: string, workloadId: string, securityScope: string)
 
 #### `attest(): Promise<string>`
 
-Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gatewayUrl}/smcp/v1/attest`. Returns the `security_token` JWT string. Throws `SMCPError` on failure.
+Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gatewayUrl}/v1/smcp/attest`. Returns the `security_token` JWT string. Throws `SMCPError` on failure.
 
 #### `callTool(toolName: string, arguments: Record<string, unknown>): Promise<unknown>`
 
-Builds an MCP JSON-RPC `tools/call` payload, wraps it in a signed `SmcpEnvelope`, and sends it to `POST {gatewayUrl}/smcp/v1/tool-call`. Returns the `result` field from the response payload. Throws `SMCPError` on Gateway rejection.
+Builds an MCP JSON-RPC `tools/call` payload, wraps it in a signed `SmcpEnvelope`, and sends it to `POST {gatewayUrl}/v1/smcp/invoke`. Returns the `result` field from the response payload. Throws `SMCPError` on Gateway rejection.
 
 Must be called after `attest()`.
 

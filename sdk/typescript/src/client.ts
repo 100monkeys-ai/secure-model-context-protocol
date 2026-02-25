@@ -40,7 +40,7 @@ export class SMCPClient {
             requested_scope: this.securityScope,
         };
 
-        const response = await fetch(`${this.gatewayUrl}/smcp/v1/attest`, {
+        const response = await fetch(`${this.gatewayUrl}/v1/smcp/attest`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export class SMCPClient {
             this.key
         );
 
-        const response = await fetch(`${this.gatewayUrl}/smcp/v1/tool-call`, {
+        const response = await fetch(`${this.gatewayUrl}/v1/smcp/invoke`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

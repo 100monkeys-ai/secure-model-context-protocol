@@ -35,7 +35,7 @@ The **SmcpEnvelope** is the signed wrapper sent by an agent on every tool call. 
 **Attestation** is the one-time handshake at the start of an agent execution session. The agent:
 
 1. Generates an ephemeral Ed25519 keypair (never persisted to disk).
-2. Sends the public key + `workload_id` + requested `security_scope` to `POST /smcp/v1/attest`.
+2. Sends the public key + `workload_id` + requested `security_scope` to `POST /v1/smcp/attest`.
 3. The Gateway verifies the workload identity (e.g., via container ID or runtime API).
 4. The Gateway issues a signed JWT (`security_token`) binding the agent public key to a named `SecurityContext`.
 

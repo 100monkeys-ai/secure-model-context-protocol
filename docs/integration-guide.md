@@ -45,7 +45,7 @@ The physical proxy layer ensures requests are routed correctly and credentials a
 
 The SMCP Gateway exposes two endpoints:
 
-### `POST /smcp/v1/attest`
+### `POST /v1/smcp/attest`
 
 **Request body:**
 
@@ -73,7 +73,7 @@ The SMCP Gateway exposes two endpoints:
 - `401` — workload identity could not be verified (error code `3000` or `3002`)
 - `403` — requested `SecurityContext` not found (error code `3001`)
 
-### `POST /smcp/v1/tool-call`
+### `POST /v1/smcp/invoke`
 
 **Request body:** A complete `SmcpEnvelope` JSON object.
 

@@ -111,13 +111,13 @@ SMCPClient(gateway_url: str, workload_id: str, security_scope: str)
 
 #### `attest() -> str`
 
-Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gateway_url}/smcp/v1/attest`. Stores the returned `security_token` internally. Returns the raw JWT string.
+Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gateway_url}/v1/smcp/attest`. Stores the returned `security_token` internally. Returns the raw JWT string.
 
 Raises `requests.HTTPError` if the Gateway rejects the request.
 
 #### `call_tool(tool_name: str, arguments: dict) -> dict`
 
-Builds an MCP JSON-RPC payload for `tools/call`, wraps it in a signed `SmcpEnvelope`, sends it to `POST {gateway_url}/smcp/v1/tool-call`, and returns `response["payload"]["result"]`.
+Builds an MCP JSON-RPC payload for `tools/call`, wraps it in a signed `SmcpEnvelope`, sends it to `POST {gateway_url}/v1/smcp/invoke`, and returns `response["payload"]["result"]`.
 
 Must be called after `attest()`.
 

@@ -659,7 +659,7 @@ Client                          Gateway                         KMS
 
 #### 6.2.1. Attestation Request
 
-**Method**: `POST /smcp/v1/attest`
+**Method**: `POST /v1/smcp/attest`
 
 **Request Body**:
 
@@ -1090,7 +1090,7 @@ During MCP initialization, Gateways SHOULD advertise SMCP support:
       "smcp": {
         "supported": true,
         "version": "v1",
-        "attestation_endpoint": "/smcp/v1/attest"
+        "attestation_endpoint": "/v1/smcp/attest"
       }
     }
   }
@@ -1150,7 +1150,7 @@ Required changes for existing MCP clients:
 2. **Implement Attestation**
 
    ```python
-   response = requests.post(f"{gateway_url}/smcp/v1/attest", json={
+   response = requests.post(f"{gateway_url}/v1/smcp/attest", json={
        "public_key": base64.b64encode(public_key_bytes).decode(),
        "workload_id": os.environ.get("WORKLOAD_ID"),
        "requested_scope": "read-only-research"
@@ -1162,7 +1162,7 @@ Required changes for existing MCP clients:
 
    ```python
    envelope = create_smcp_envelope(security_token, mcp_payload, private_key)
-   response = requests.post(f"{gateway_url}/smcp/v1/tool-call", json=envelope)
+   response = requests.post(f"{gateway_url}/v1/smcp/invoke", json=envelope)
    ```
 
 **Estimated Engineering Effort**: 1-2 days per client project
@@ -1584,7 +1584,7 @@ class SMCPClient:
         
         # Send attestation request
         response = requests.post(
-            f"{self.gateway_url}/smcp/v1/attest",
+            f"{self.gateway_url}/v1/smcp/attest",
             json={
                 "public_key": public_key_b64,
                 "workload_id": self.workload_id,
@@ -1636,7 +1636,7 @@ class SMCPClient:
         
         # Send to gateway
         response = requests.post(
-            f"{self.gateway_url}/smcp/v1/tool-call",
+            f"{self.gateway_url}/v1/smcp/invoke",
             json=envelope,
             timeout=30
         )

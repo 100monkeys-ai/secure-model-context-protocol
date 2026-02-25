@@ -35,7 +35,7 @@ On construction, an ephemeral `Ed25519Key` is generated. No network calls are ma
 Performs the SMCP attestation handshake:
 
 1. Serializes the ephemeral public key as Base64.
-2. Sends `POST {gateway_url}/smcp/v1/attest` with body:
+2. Sends `POST {gateway_url}/v1/smcp/attest` with body:
 
    ```json
    {
@@ -58,7 +58,7 @@ Makes a signed tool call:
 
 1. Builds an MCP JSON-RPC payload: `{ "jsonrpc": "2.0", "method": "tools/call", "params": { "name": tool_name, "arguments": arguments }, "id": 1 }`.
 2. Creates a `SmcpEnvelope` (calls `create_smcp_envelope` internally).
-3. Sends `POST {gateway_url}/smcp/v1/tool-call` with the envelope as the body.
+3. Sends `POST {gateway_url}/v1/smcp/invoke` with the envelope as the body.
 4. Returns `response["payload"]["result"]`.
 
 **Raises:** `requests.HTTPError` on Gateway rejection (see [Error Codes](#error-codes)).
@@ -229,7 +229,7 @@ On construction, an ephemeral `Ed25519Key` is generated. No network calls are ma
 Performs the SMCP attestation handshake:
 
 1. Serializes the ephemeral public key as Base64.
-2. Sends `POST {gatewayUrl}/smcp/v1/attest` with body:
+2. Sends `POST {gatewayUrl}/v1/smcp/attest` with body:
 
    ```json
    {
@@ -252,7 +252,7 @@ Makes a signed tool call:
 
 1. Builds an MCP JSON-RPC payload.
 2. Creates a `SmcpEnvelope` (calls `createSmcpEnvelope` internally).
-3. Sends `POST {gatewayUrl}/smcp/v1/tool-call` with the envelope as the body.
+3. Sends `POST {gatewayUrl}/v1/smcp/invoke` with the envelope as the body.
 4. Returns `response.payload.result`.
 
 **Throws:** `SMCPError` on Gateway rejection.
