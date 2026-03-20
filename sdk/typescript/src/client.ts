@@ -2,6 +2,26 @@ import { Ed25519Key } from './crypto';
 import { createSmcpEnvelope, McpPayload } from './envelope';
 import crypto from 'crypto';
 
+type AttestationResponse = {
+    status?: string;
+    message?: string;
+    security_token?: string;
+    error?: {
+        message?: string;
+    };
+};
+
+type InvokeResponse = {
+    error?: {
+        message?: string;
+    };
+    status?: string;
+    payload?: {
+        error?: unknown;
+        result?: unknown;
+    };
+};
+
 export class SMCPError extends Error {
     constructor(message: string) {
         super(message);
@@ -56,20 +76,20 @@ export class SMCPClient {
             throw new SMCPError(`Attestation failed: HTTP ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as AttestationResponse;
 
         if (data.status === 'error') {
             throw new SMCPError(`Attestation failed: ${data.message || 'Unknown error'}`);
         }
 
-        this.securityToken = data.security_token;
+        this.securityToken = data.security_token ?? null;
         return this.securityToken as string;
     }
 
     /**
      * Make an SMCP-wrapped JSON-RPC method call to a tool passing through the Gateway.
      */
-    public async callTool(toolName: string, argumentsObj: Record<string, any>): Promise<any> {
+    public async callTool(toolName: string, argumentsObj: Record<string, unknown>): Promise<unknown> {
         if (!this.securityToken || !this.key) {
             throw new SMCPError('No security token available. Must call attest() first.');
         }
@@ -100,20 +120,20 @@ export class SMCPClient {
             body: JSON.stringify(envelope),
         });
 
-        const responseData = await response.json().catch(() => null);
+        const responseData = (await response.json().catch(() => null)) as InvokeResponse | null;
 
         if (!response.ok) {
-            if (responseData && responseData.error && responseData.error.message) {
+            if (responseData?.error?.message) {
                 throw new SMCPError(`SMCP Gateway Rejected: ${responseData.error.message}`);
             }
             throw new SMCPError(`SMCP Gateway error: HTTP ${response.status}`);
         }
 
-        if (responseData && responseData.status === 'error') {
+        if (responseData?.status === 'error' && responseData.error?.message) {
             throw new SMCPError(`SMCP Gateway Error: ${responseData.error.message}`);
         }
 
-        const payload = responseData?.payload || {};
+        const payload = (responseData?.payload ?? {}) as NonNullable<InvokeResponse['payload']>;
 
         if (payload.error) {
             throw new SMCPError(`MCP Tool Error: ${JSON.stringify(payload.error)}`);

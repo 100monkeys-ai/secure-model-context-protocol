@@ -5,14 +5,13 @@ module.exports = {
     roots: ['<rootDir>/__tests__'],
     testMatch: ['**/*.test.ts'],
     transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
-            useESM: true,
-            tsconfig: 'tsconfig.json'
-        }],
-        '^.+\\.js$': 'babel-jest',
+        '^.+\\.tsx?$': [
+            'ts-jest',
+            {
+                useESM: true,
+                tsconfig: 'tsconfig.json',
+            },
+        ],
     },
-    transformIgnorePatterns: [
-        'node_modules/(?!@noble/ed25519)'
-    ],
-    extensionsToTreatAsEsm: ['.ts']
+    extensionsToTreatAsEsm: ['.ts'],
 };

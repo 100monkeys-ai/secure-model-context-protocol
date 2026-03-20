@@ -1,6 +1,28 @@
 import * as ed from '@noble/ed25519';
-import { createCanonicalMessage, McpPayload, SmcpEnvelope } from './envelope';
+import { createCanonicalMessage, McpPayload } from './envelope';
 import { SMCPError } from './client';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isMcpPayload(value: unknown): value is McpPayload {
+    if (!isRecord(value)) {
+        return false;
+    }
+
+    const jsonrpc = value.jsonrpc;
+    const id = value.id;
+    const method = value.method;
+    const params = value.params;
+
+    return (
+        typeof jsonrpc === 'string' &&
+        (typeof id === 'string' || typeof id === 'number') &&
+        typeof method === 'string' &&
+        (params === undefined || isRecord(params))
+    );
+}
 
 /**
  * Server-side primitive to verify an incoming SmcpEnvelope.
@@ -17,10 +39,14 @@ import { SMCPError } from './client';
  * @throws SMCPError If verification fails.
  */
 export async function verifySmcpEnvelope(
-    envelope: any,
+    envelope: unknown,
     publicKeyBytes: Uint8Array,
     maxAgeSeconds: number = 30
 ): Promise<McpPayload> {
+    if (!isRecord(envelope)) {
+        throw new SMCPError('Missing or invalid envelope object.');
+    }
+
     // 1. Validate envelope structure
     if (envelope.protocol !== 'smcp/v1') {
         throw new SMCPError("Missing or invalid 'protocol' field. Expected 'smcp/v1'.");
@@ -37,7 +63,7 @@ export async function verifySmcpEnvelope(
     }
 
     const payload = envelope.payload;
-    if (!payload || typeof payload !== 'object') {
+    if (!isMcpPayload(payload)) {
         throw new SMCPError("Missing or invalid 'payload' field.");
     }
 
@@ -63,23 +89,24 @@ export async function verifySmcpEnvelope(
     // 3. Canonicalize message
     let canonicalMsg: Uint8Array;
     try {
-        canonicalMsg = createCanonicalMessage(securityToken, payload as McpPayload, timestampUnix);
-    } catch (e: any) {
-        throw new SMCPError(`Failed to construct canonical message: ${e.message}`);
+        canonicalMsg = createCanonicalMessage(securityToken, payload, timestampUnix);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        throw new SMCPError(`Failed to construct canonical message: ${message}`);
     }
 
     // 4. Verify Signature
     let signatureBytes: Uint8Array;
     try {
         signatureBytes = Buffer.from(signatureB64, 'base64');
-    } catch (e) {
+    } catch {
         throw new SMCPError("Invalid base64 encoding for 'signature'.");
     }
 
-    let isValid = false;
+    let isValid: boolean;
     try {
         isValid = await ed.verifyAsync(signatureBytes, canonicalMsg, publicKeyBytes);
-    } catch (e) {
+    } catch {
         throw new SMCPError("Ed25519 signature verification failed.");
     }
 
@@ -87,5 +114,5 @@ export async function verifySmcpEnvelope(
         throw new SMCPError("Ed25519 signature verification failed.");
     }
 
-    return payload as McpPayload;
+    return payload;
 }

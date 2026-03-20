@@ -7,7 +7,7 @@ export interface McpPayload {
     jsonrpc: string;
     id: string | number;
     method: string;
-    params?: Record<string, any>;
+    params?: Record<string, unknown>;
 }
 
 /**
@@ -46,7 +46,7 @@ export function createCanonicalMessage(
 /**
  * Helper to stringify an object with keys sorted alphabetically.
  */
-function stableStringify(obj: any): string {
+function stableStringify(obj: unknown): string {
     if (obj === null || typeof obj !== 'object') {
         return JSON.stringify(obj);
     }
@@ -61,12 +61,13 @@ function stableStringify(obj: any): string {
         return res;
     }
 
-    const keys = Object.keys(obj).sort();
+    const value = obj as Record<string, unknown>;
+    const keys = Object.keys(value).sort();
     let res = '{';
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        if (obj[key] !== undefined) {
-            res += (i ? ',' : '') + JSON.stringify(key) + ':' + stableStringify(obj[key]);
+        if (value[key] !== undefined) {
+            res += (i ? ',' : '') + JSON.stringify(key) + ':' + stableStringify(value[key]);
         }
     }
     res += '}';
