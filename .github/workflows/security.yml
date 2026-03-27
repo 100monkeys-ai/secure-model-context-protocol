@@ -26,7 +26,10 @@ jobs:
       - name: Install dependencies
         run: pip install pip-audit && pip install -e .
       - name: Run pip-audit
-        run: pip-audit
+        # CVE-2026-4539: pygments <=2.19.2 ReDoS in ANSI color parsing.
+        # No upstream fix available yet. pygments is a transitive dep via rich.
+        # Low severity (ReDoS only exploitable with crafted input to terminal rendering).
+        run: pip-audit --ignore-vuln CVE-2026-4539
 
   npm-audit:
     name: npm Dependency Audit
