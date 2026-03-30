@@ -38,9 +38,10 @@
         "@types/jest": "^30.0.0",
         "@types/node": "^25.5.0",
         "eslint": "^10.0.3",
+        "@swc/core": "^1.15.21",
+        "@swc/jest": "^0.2.39",
         "jest": "^30.0.0",
-        "ts-jest": "^29.4.6",
         "typescript": "^6.0.2",
-        "typescript-eslint": "^8.57.1"
+        "typescript-eslint": "8.57.3-alpha.3"
     }
 }

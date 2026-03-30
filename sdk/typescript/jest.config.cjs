@@ -1,15 +1,14 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+/** @type {import('jest').Config} */
 module.exports = {
-    preset: 'ts-jest',
     testEnvironment: 'node',
     roots: ['<rootDir>/__tests__'],
     testMatch: ['**/*.test.ts'],
     transform: {
-        '^.+\\.tsx?$': [
-            'ts-jest',
+        '^.+\.tsx?$': [
+            '@swc/jest',
             {
-                useESM: true,
-                tsconfig: 'tsconfig.json',
+                jsc: { parser: { syntax: 'typescript' } },
+                module: { type: 'es6' },
             },
         ],
     },

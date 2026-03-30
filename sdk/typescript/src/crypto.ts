@@ -16,9 +16,10 @@ export class Ed25519Key {
      */
     public static async generate(): Promise<Ed25519Key> {
         const key = new Ed25519Key();
-        key.privateKey = ed.utils.randomPrivateKey();
+        const privateKey = ed.utils.randomSecretKey();
+        key.privateKey = privateKey;
         // Asynchronously derive public key to avoid synchronous hash dependency in Node
-        key.publicKey = await ed.getPublicKeyAsync(key.privateKey);
+        key.publicKey = await ed.getPublicKeyAsync(privateKey);
         return key;
     }
 
