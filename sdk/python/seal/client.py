@@ -3,27 +3,27 @@ import requests
 from typing import Dict, Any, Optional
 
 from .crypto import Ed25519Key
-from .envelope import create_smcp_envelope
+from .envelope import create_seal_envelope
 
-class SMCPError(Exception):
-    """Base exception for SMCP protocol errors."""
+class SEALError(Exception):
+    """Base exception for SEAL protocol errors."""
     def __init__(self, message: str, status_code: Optional[int] = None):
         super().__init__(message)
         self.status_code = status_code
 
-class SMCPClient:
+class SEALClient:
     """
     A Python client wrapper for generating ephemeral keys, interacting
-    with an SMCP Gateway to undergo an attestation handshake, and securely
-    wrapping Model Context Protocol (MCP) message calls leveraging SMCP.
+    with a SEAL Gateway to undergo an attestation handshake, and securely
+    wrapping Model Context Protocol (MCP) message calls leveraging SEAL.
     """
     
     def __init__(self, gateway_url: str, workload_id: str, security_scope: str):
         """
-        Initialize the SMCP client properties.
+        Initialize the SEAL client properties.
         
         Args:
-            gateway_url: The HTTP(s) endpoint of the target SMCP Gateway proxying tools.
+            gateway_url: The HTTP(s) endpoint of the target SEAL Gateway proxying tools.
             workload_id: Process-specific identifier matching Gateway attest algorithms.
             security_scope: Requested operational constraints (e.g. read-only-research).
         """
@@ -40,7 +40,7 @@ class SMCPClient:
         self.key = Ed25519Key.generate()
         
         response = requests.post(
-            f"{self.gateway_url}/v1/smcp/attest",
+            f"{self.gateway_url}/v1/seal/attest",
             json={
                 "public_key": self.key.get_public_key_base64(),
                 "workload_id": self.workload_id,
@@ -52,14 +52,14 @@ class SMCPClient:
         
         data = response.json()
         if data.get("status") == "error":
-            raise SMCPError(f"Attestation failed: {data.get('message', 'Unknown error')}")
+            raise SEALError(f"Attestation failed: {data.get('message', 'Unknown error')}")
             
         self.security_token = data["security_token"]
         return self.security_token
         
     def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Make an SMCP-wrapped JSON-RPC method call to a tool passing through the Gateway.
+        Make a SEAL-wrapped JSON-RPC method call to a tool passing through the Gateway.
         
         Args:
             tool_name: The name parameter matching capabilities, e.g 'fs.read'.
@@ -69,7 +69,7 @@ class SMCPClient:
             Dict: The nested 'result' field of the payload structure returned via HTTP.
         """
         if not self.security_token:
-            raise SMCPError("No security token available. Must attest() first.")
+            raise SEALError("No security token available. Must attest() first.")
             
         mcp_payload = {
             "jsonrpc": "2.0",
@@ -81,14 +81,14 @@ class SMCPClient:
             }
         }
         
-        envelope = create_smcp_envelope(
+        envelope = create_seal_envelope(
             security_token=self.security_token,
             mcp_payload=mcp_payload,
             private_key=self.key
         )
         
         response = requests.post(
-            f"{self.gateway_url}/v1/smcp/invoke",
+            f"{self.gateway_url}/v1/seal/invoke",
             json=envelope,
             timeout=30
         )
@@ -99,21 +99,21 @@ class SMCPClient:
             try:
                 error_response = response.json()
                 if error_response.get("status") == "error":
-                    raise SMCPError(f"SMCP Gateway Rejected: {error_response['error']['message']}")
+                    raise SEALError(f"SEAL Gateway Rejected: {error_response['error']['message']}")
             except ValueError:
                 response.raise_for_status()
             
         # Parse standard unwrapped JSON-RPC response from the tool server.
-        smcp_response = response.json()
+        seal_response = response.json()
         
         # A response might also be wrapped via error schemas.
-        if smcp_response.get("status") == "error":
-             raise SMCPError(f"SMCP Gateway Error: {smcp_response['error']['message']}")
+        if seal_response.get("status") == "error":
+             raise SEALError(f"SEAL Gateway Error: {seal_response['error']['message']}")
              
         # Extract the inner MCP payload return
-        payload = smcp_response.get("payload", {})
+        payload = seal_response.get("payload", {})
         if "error" in payload:
-            raise SMCPError(f"MCP Tool Error: {payload['error']}")
+            raise SEALError(f"MCP Tool Error: {payload['error']}")
             
         return payload.get("result", {})
     

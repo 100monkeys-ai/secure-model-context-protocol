@@ -43,9 +43,9 @@ def create_canonical_message(security_token: str, payload: Dict[str, Any], times
     
     return canonical_json.encode('utf-8')
 
-def create_smcp_envelope(security_token: str, mcp_payload: Dict[str, Any], private_key: Ed25519Key) -> Dict[str, Any]:
+def create_seal_envelope(security_token: str, mcp_payload: Dict[str, Any], private_key: Ed25519Key) -> Dict[str, Any]:
     """
-    Wrap an MCP JSON-RPC payload in an SMCP Security Envelope v1.
+    Wrap an MCP JSON-RPC payload in a SEAL Security Envelope v1.
     
     Args:
         security_token: The client's JWT allocated from attestation.
@@ -53,7 +53,7 @@ def create_smcp_envelope(security_token: str, mcp_payload: Dict[str, Any], priva
         private_key: The client's ephemeral Ed25519 keypair for signing.
         
     Returns:
-        Dict: A comprehensive SMCP Envelope satisfying all RFC constraints.
+        Dict: A comprehensive SEAL Envelope satisfying all RFC constraints.
     """
     utc_now = datetime.now(timezone.utc)
     timestamp_iso = utc_now.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
@@ -68,7 +68,7 @@ def create_smcp_envelope(security_token: str, mcp_payload: Dict[str, Any], priva
     signature_b64 = private_key.sign_base64(canonical_bytes)
     
     return {
-        "protocol": "smcp/v1",
+        "protocol": "seal/v1",
         "security_token": security_token,
         "signature": signature_b64,
         "payload": mcp_payload,

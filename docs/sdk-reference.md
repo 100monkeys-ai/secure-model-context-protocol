@@ -1,19 +1,19 @@
 # SDK Reference
 
-Complete API reference for the SMCP Python and TypeScript SDKs. For a step-by-step tutorial, see [Getting Started](getting-started.md).
+Complete API reference for the SEAL Python and TypeScript SDKs. For a step-by-step tutorial, see [Getting Started](getting-started.md).
 
 ---
 
-## Python SDK (`smcp`)
+## Python SDK (`seal`)
 
-### `SMCPClient` (Python SDK)
+### `SEALClient` (Python SDK)
 
-The main entry point for interacting with an SMCP Gateway.
+The main entry point for interacting with a SEAL Gateway.
 
 ```python
-from smcp import SMCPClient
+from seal import SEALClient
 
-client = SMCPClient(
+client = SEALClient(
     gateway_url: str,
     workload_id: str,
     security_scope: str,
@@ -24,7 +24,7 @@ client = SMCPClient(
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `gateway_url` | `str` | Base URL of the SMCP Gateway, no trailing slash (e.g., `https://gateway.example.com`) |
+| `gateway_url` | `str` | Base URL of the SEAL Gateway, no trailing slash (e.g., `https://gateway.example.com`) |
 | `workload_id` | `str` | Unique identifier for the current execution session |
 | `security_scope` | `str` | Name of the `SecurityContext` to request at attestation |
 
@@ -32,10 +32,10 @@ On construction, an ephemeral `Ed25519Key` is generated. No network calls are ma
 
 #### `attest() -> str`
 
-Performs the SMCP attestation handshake:
+Performs the SEAL attestation handshake:
 
 1. Serializes the ephemeral public key as Base64.
-2. Sends `POST {gateway_url}/v1/smcp/attest` with body:
+2. Sends `POST {gateway_url}/v1/seal/attest` with body:
 
    ```json
    {
@@ -57,8 +57,8 @@ Performs the SMCP attestation handshake:
 Makes a signed tool call:
 
 1. Builds an MCP JSON-RPC payload: `{ "jsonrpc": "2.0", "method": "tools/call", "params": { "name": tool_name, "arguments": arguments }, "id": 1 }`.
-2. Creates a `SmcpEnvelope` (calls `create_smcp_envelope` internally).
-3. Sends `POST {gateway_url}/v1/smcp/invoke` with the envelope as the body.
+2. Creates a `SealEnvelope` (calls `create_seal_envelope` internally).
+3. Sends `POST {gateway_url}/v1/seal/invoke` with the envelope as the body.
 4. Returns `response["payload"]["result"]`.
 
 **Raises:** `requests.HTTPError` on Gateway rejection (see [Error Codes](#error-codes)).
@@ -74,7 +74,7 @@ Called automatically during garbage collection. Calls `self.key.erase()`.
 Manages an ephemeral Ed25519 keypair.
 
 ```python
-from smcp import Ed25519Key
+from seal import Ed25519Key
 
 key = Ed25519Key.generate()
 ```
@@ -105,14 +105,14 @@ Clears the internal references to the private and public key objects. Due to Pyt
 
 ---
 
-### `create_smcp_envelope`
+### `create_seal_envelope`
 
-Creates a signed `SmcpEnvelope` dict.
+Creates a signed `SealEnvelope` dict.
 
 ```python
-from smcp import create_smcp_envelope
+from seal import create_seal_envelope
 
-envelope = create_smcp_envelope(
+envelope = create_seal_envelope(
     security_token: str,
     mcp_payload: dict,
     private_key: Ed25519Key,
@@ -129,7 +129,7 @@ envelope = create_smcp_envelope(
 
 ```python
 {
-    "protocol": "smcp/v1",
+    "protocol": "seal/v1",
     "security_token": "<JWT>",
     "signature": "<Base64 Ed25519 signature>",
     "payload": { ... },  # mcp_payload unchanged
@@ -146,7 +146,7 @@ The signature is computed over `create_canonical_message(security_token, mcp_pay
 Builds the deterministic byte sequence over which the signature is computed.
 
 ```python
-from smcp import create_canonical_message
+from seal import create_canonical_message
 
 message_bytes = create_canonical_message(
     security_token: str,
@@ -172,14 +172,14 @@ This ensures that any two implementations that agree on the inputs will produce 
 
 ---
 
-### `verify_smcp_envelope`
+### `verify_seal_envelope`
 
-Server-side primitive to verify an incoming `SmcpEnvelope`.
+Server-side primitive to verify an incoming `SealEnvelope`.
 
 ```python
-from smcp.server import verify_smcp_envelope
+from seal.server import verify_seal_envelope
 
-mcp_payload = verify_smcp_envelope(
+mcp_payload = verify_seal_envelope(
     envelope: dict,
     public_key_bytes: bytes,
     max_age_seconds: int = 30,
@@ -188,26 +188,26 @@ mcp_payload = verify_smcp_envelope(
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `envelope` | `dict` | The incoming JSON payload containing the `SmcpEnvelope` |
+| `envelope` | `dict` | The incoming JSON payload containing the `SealEnvelope` |
 | `public_key_bytes` | `bytes` | The raw 32-byte Ed25519 public key of the agent |
 | `max_age_seconds` | `int` | The maximum allowed age of the envelope in seconds (default: 30) |
 
 **Returns** the verified `mcp_payload` if successful.
 
-**Raises** `SMCPError` with the appropriate status code (1000-1005) if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed replay window.
+**Raises** `SEALError` with the appropriate status code (1000-1005) if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed replay window.
 
 ---
 
-## TypeScript SDK (`@100monkeys/smcp`)
+## TypeScript SDK (`@100monkeys/seal`)
 
-### `SMCPClient` (TypeScript SDK)
+### `SEALClient` (TypeScript SDK)
 
-The main entry point for interacting with an SMCP Gateway.
+The main entry point for interacting with a SEAL Gateway.
 
 ```typescript
-import { SMCPClient } from "@100monkeys/smcp";
+import { SEALClient } from "@100monkeys/seal";
 
-const client = new SMCPClient(
+const client = new SEALClient(
   gatewayUrl: string,
   workloadId: string,
   securityScope: string,
@@ -218,7 +218,7 @@ const client = new SMCPClient(
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `gatewayUrl` | `string` | Base URL of the SMCP Gateway, no trailing slash |
+| `gatewayUrl` | `string` | Base URL of the SEAL Gateway, no trailing slash |
 | `workloadId` | `string` | Unique identifier for the current execution session |
 | `securityScope` | `string` | Name of the `SecurityContext` to request at attestation |
 
@@ -226,10 +226,10 @@ On construction, an ephemeral `Ed25519Key` is generated. No network calls are ma
 
 #### `attest(): Promise<string>`
 
-Performs the SMCP attestation handshake:
+Performs the SEAL attestation handshake:
 
 1. Serializes the ephemeral public key as Base64.
-2. Sends `POST {gatewayUrl}/v1/smcp/attest` with body:
+2. Sends `POST {gatewayUrl}/v1/seal/attest` with body:
 
    ```json
    {
@@ -242,7 +242,7 @@ Performs the SMCP attestation handshake:
 3. Extracts `response.security_token` and stores it internally.
 4. Returns the raw JWT string.
 
-**Throws:** `SMCPError` on 4xx/5xx responses.
+**Throws:** `SEALError` on 4xx/5xx responses.
 
 **Must be called before `callTool()`.**
 
@@ -251,11 +251,11 @@ Performs the SMCP attestation handshake:
 Makes a signed tool call:
 
 1. Builds an MCP JSON-RPC payload.
-2. Creates a `SmcpEnvelope` (calls `createSmcpEnvelope` internally).
-3. Sends `POST {gatewayUrl}/v1/smcp/invoke` with the envelope as the body.
+2. Creates a `SealEnvelope` (calls `createSealEnvelope` internally).
+3. Sends `POST {gatewayUrl}/v1/seal/invoke` with the envelope as the body.
 4. Returns `response.payload.result`.
 
-**Throws:** `SMCPError` on Gateway rejection.
+**Throws:** `SEALError` on Gateway rejection.
 
 #### `dispose(): void`
 
@@ -263,15 +263,15 @@ Zeroes the private and public key byte arrays. Call this in a `finally` block fo
 
 ---
 
-### `SMCPError`
+### `SEALError`
 
 ```typescript
-class SMCPError extends Error {
+class SEALError extends Error {
   constructor(message: string);
 }
 ```
 
-Thrown by `SMCPClient` methods on HTTP 4xx/5xx responses. The `message` property contains the response body text.
+Thrown by `SEALClient` methods on HTTP 4xx/5xx responses. The `message` property contains the response body text.
 
 ---
 
@@ -280,7 +280,7 @@ Thrown by `SMCPClient` methods on HTTP 4xx/5xx responses. The `message` property
 Manages an ephemeral Ed25519 keypair.
 
 ```typescript
-import { Ed25519Key } from "@100monkeys/smcp";
+import { Ed25519Key } from "@100monkeys/seal";
 
 const key = await Ed25519Key.generate();
 ```
@@ -321,16 +321,16 @@ Fills the private and public key `Uint8Array`s with zeros.
 
 ---
 
-### `createSmcpEnvelope`
+### `createSealEnvelope`
 
 ```typescript
-import { createSmcpEnvelope } from "@100monkeys/smcp";
+import { createSealEnvelope } from "@100monkeys/seal";
 
-const envelope = await createSmcpEnvelope(
+const envelope = await createSealEnvelope(
   securityToken: string,
   mcpPayload: McpPayload,
   privateKey: Ed25519Key,
-): Promise<SmcpEnvelope>
+): Promise<SealEnvelope>
 ```
 
 | Parameter | Type | Description |
@@ -339,11 +339,11 @@ const envelope = await createSmcpEnvelope(
 | `mcpPayload` | `McpPayload` | Standard MCP JSON-RPC payload |
 | `privateKey` | `Ed25519Key` | The ephemeral keypair to sign with |
 
-**Returns** an `SmcpEnvelope`:
+**Returns** an `SealEnvelope`:
 
 ```typescript
-interface SmcpEnvelope {
-  protocol: "smcp/v1";
+interface SealEnvelope {
+  protocol: "seal/v1";
   security_token: string;
   signature: string;        // Base64 Ed25519
   payload: McpPayload;
@@ -367,7 +367,7 @@ interface McpPayload {
 ### `createCanonicalMessage`
 
 ```typescript
-import { createCanonicalMessage } from "@100monkeys/smcp";
+import { createCanonicalMessage } from "@100monkeys/seal";
 
 const messageBytes = createCanonicalMessage(
   securityToken: string,
@@ -380,14 +380,14 @@ Produces the UTF-8 canonical JSON byte sequence (sorted keys, no whitespace, int
 
 ---
 
-### `verifySmcpEnvelope`
+### `verifySealEnvelope`
 
-Server-side primitive to verify an incoming `SmcpEnvelope`.
+Server-side primitive to verify an incoming `SealEnvelope`.
 
 ```typescript
-import { verifySmcpEnvelope } from "@100monkeys/smcp/server";
+import { verifySealEnvelope } from "@100monkeys/seal/server";
 
-const mcpPayload = await verifySmcpEnvelope(
+const mcpPayload = await verifySealEnvelope(
   envelope: any,
   publicKeyBytes: Uint8Array,
   maxAgeSeconds: number = 30,
@@ -396,19 +396,19 @@ const mcpPayload = await verifySmcpEnvelope(
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `envelope` | `any` | The incoming JSON payload containing the `SmcpEnvelope` |
+| `envelope` | `any` | The incoming JSON payload containing the `SealEnvelope` |
 | `publicKeyBytes` | `Uint8Array` | The raw 32-byte Ed25519 public key of the agent |
 | `maxAgeSeconds` | `number` | The maximum allowed age of the envelope in seconds (default: 30) |
 
 **Returns** the verified `mcpPayload` object if successful.
 
-**Throws** `SMCPError` if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed ±30s replay window.
+**Throws** `SEALError` if the envelope format is invalid, the signature is bad, or the timestamp is outside the allowed ±30s replay window.
 
 ---
 
 ## Error Codes
 
-SMCP error codes are returned in the response body when the Gateway rejects a request. All SDKs throw/raise on these responses.
+SEAL error codes are returned in the response body when the Gateway rejects a request. All SDKs throw/raise on these responses.
 
 | Code range | HTTP status | Category | Description |
 | ------------ | ------------- | ---------- | ------------- |
@@ -417,7 +417,7 @@ SMCP error codes are returned in the response body when the Gateway rejects a re
 | `1002` | 401 | Expired token | `security_token` past `exp` claim |
 | `1003` | 401 | Invalid token | JWT signature invalid or unknown issuer |
 | `1004` | 401 | Replay detected | Timestamp outside ±30 second window |
-| `1005` | 401 | Invalid protocol | `protocol` field not `"smcp/v1"` |
+| `1005` | 401 | Invalid protocol | `protocol` field not `"seal/v1"` |
 | `2000` | 403 | Tool not allowed | No matching capability for this tool name |
 | `2001` | 403 | Tool explicitly denied | Tool matched the `deny_list` |
 | `2002` | 403 | Path not in allowlist | File path outside `path_allowlist` |

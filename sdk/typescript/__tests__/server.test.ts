@@ -1,19 +1,19 @@
 import { describe, expect, it } from '@jest/globals';
-import { verifySmcpEnvelope } from '../src/server';
-import { createSmcpEnvelope, McpPayload } from '../src/envelope';
+import { verifySealEnvelope } from '../src/server';
+import { createSealEnvelope, McpPayload } from '../src/envelope';
 import { Ed25519Key } from '../src/crypto';
-import { SMCPError } from '../src/client';
+import { SEALError } from '../src/client';
 import { createCanonicalMessage } from '../src/envelope';
 
-describe('SMCP Server Verification', () => {
+describe('SEAL Server Verification', () => {
     it('verifies a valid envelope', async () => {
         const key = await Ed25519Key.generate();
         const payload: McpPayload = { jsonrpc: '2.0', id: 1, method: 'tools/call' };
         const token = 'test.jwt.token';
 
-        const envelope = await createSmcpEnvelope(token, payload, key);
+        const envelope = await createSealEnvelope(token, payload, key);
 
-        const verifiedPayload = await verifySmcpEnvelope(envelope, key.getPublicKeyBytes());
+        const verifiedPayload = await verifySealEnvelope(envelope, key.getPublicKeyBytes());
 
         expect(verifiedPayload).toEqual(payload);
     });
@@ -21,7 +21,7 @@ describe('SMCP Server Verification', () => {
     it('rejects tampered payload', async () => {
         const key = await Ed25519Key.generate();
         const payload: McpPayload = { jsonrpc: '2.0', id: 1, method: 'tools/call' };
-        const envelope = await createSmcpEnvelope('token', payload, key);
+        const envelope = await createSealEnvelope('token', payload, key);
 
         // Tamper with the payload
         const tamperedEnvelope = {
@@ -29,8 +29,8 @@ describe('SMCP Server Verification', () => {
             payload: { ...envelope.payload, id: 2 }
         };
 
-        await expect(verifySmcpEnvelope(tamperedEnvelope, key.getPublicKeyBytes()))
-            .rejects.toThrow(SMCPError);
+        await expect(verifySealEnvelope(tamperedEnvelope, key.getPublicKeyBytes()))
+            .rejects.toThrow(SEALError);
     });
 
     it('rejects expired envelope', async () => {
@@ -43,14 +43,14 @@ describe('SMCP Server Verification', () => {
         const signature = await key.signBase64(canonical);
 
         const expiredEnvelope = {
-            protocol: 'smcp/v1',
+            protocol: 'seal/v1',
             security_token: 'token',
             signature: signature,
             payload: payload,
             timestamp: timestampIso
         };
 
-        await expect(verifySmcpEnvelope(expiredEnvelope, key.getPublicKeyBytes()))
+        await expect(verifySealEnvelope(expiredEnvelope, key.getPublicKeyBytes()))
             .rejects.toThrow(/outside the allowed/);
     });
 
@@ -59,9 +59,9 @@ describe('SMCP Server Verification', () => {
         const key2 = await Ed25519Key.generate();
         const payload: McpPayload = { jsonrpc: '2.0', id: 1, method: 'tools/call' };
 
-        const envelope = await createSmcpEnvelope('token', payload, key1);
+        const envelope = await createSealEnvelope('token', payload, key1);
 
-        await expect(verifySmcpEnvelope(envelope, key2.getPublicKeyBytes()))
+        await expect(verifySealEnvelope(envelope, key2.getPublicKeyBytes()))
             .rejects.toThrow(/verification failed/);
     });
 });

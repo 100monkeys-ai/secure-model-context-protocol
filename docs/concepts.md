@@ -1,18 +1,18 @@
-# SMCP Concepts
+# SEAL Concepts
 
-This document defines the core terms and concepts used throughout SMCP. Use the [Ubiquitous Language](../RFC/smcp-v1-specification.md) consistently — the same terms appear in the RFC, SDKs, and Gateway implementations.
+This document defines the core terms and concepts used throughout SEAL. Use the [Ubiquitous Language](../RFC/seal-v1-specification.md) consistently — the same terms appear in the RFC, SDKs, and Gateway implementations.
 
 ---
 
-## SmcpEnvelope
+## SealEnvelope
 
-The **SmcpEnvelope** is the signed wrapper sent by an agent on every tool call. It is an immutable value object — it cannot be modified after construction without invalidating the signature.
+The **SealEnvelope** is the signed wrapper sent by an agent on every tool call. It is an immutable value object — it cannot be modified after construction without invalidating the signature.
 
 **Wire format (JSON):**
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "<JWT>",
   "signature": "<Base64-encoded Ed25519 signature>",
   "payload": { "<standard MCP JSON-RPC tools/call>" },
@@ -22,7 +22,7 @@ The **SmcpEnvelope** is the signed wrapper sent by an agent on every tool call. 
 
 | Field | Description |
 | ------- | ------------- |
-| `protocol` | Always `"smcp/v1"`. Used for protocol negotiation and version detection. |
+| `protocol` | Always `"seal/v1"`. Used for protocol negotiation and version detection. |
 | `security_token` | The JWT issued by the Gateway at attestation. Binds the agent to its `SecurityContext`. |
 | `signature` | Ed25519 signature over the canonical message (see [Cryptography](security.md#cryptographic-choices)). |
 | `payload` | The underlying MCP JSON-RPC payload. The Tool Server sees only this field after the Gateway unwraps the envelope. |
@@ -35,7 +35,7 @@ The **SmcpEnvelope** is the signed wrapper sent by an agent on every tool call. 
 **Attestation** is the one-time handshake at the start of an agent execution session. The agent:
 
 1. Generates an ephemeral Ed25519 keypair (never persisted to disk).
-2. Sends the public key + `workload_id` + requested `security_scope` to `POST /v1/smcp/attest`.
+2. Sends the public key + `workload_id` + requested `security_scope` to `POST /v1/seal/attest`.
 3. The Gateway verifies the workload identity (e.g., via container ID or runtime API).
 4. The Gateway issues a signed JWT (`security_token`) binding the agent public key to a named `SecurityContext`.
 
@@ -114,9 +114,9 @@ If a constraint list is absent, no constraint of that type is applied for that c
 
 ---
 
-## SmcpSession
+## SealSession
 
-A **SmcpSession** is an Aggregate Root representing the lifecycle of an agent's SMCP participation within one execution session:
+A **SealSession** is an Aggregate Root representing the lifecycle of an agent's SEAL participation within one execution session:
 
 ```markdown
 attestation → authorized tool calls → (expiry or revocation)
@@ -143,7 +143,7 @@ The `PolicyEngine` can be implemented using [Cedar](https://www.cedarpolicy.com/
 
 ## Confused Deputy
 
-The **Confused Deputy** is the class of attack SMCP is designed to prevent. In a standard MCP setup:
+The **Confused Deputy** is the class of attack SEAL is designed to prevent. In a standard MCP setup:
 
 1. Agent A calls the Orchestrator with a tool request.
 2. The Orchestrator, which holds elevated credentials to reach Tool Servers, forwards the request.
@@ -151,7 +151,7 @@ The **Confused Deputy** is the class of attack SMCP is designed to prevent. In a
 
 An attacker who can inject instructions into agent context (prompt injection) can exploit this to invoke tools the agent was never supposed to call.
 
-SMCP prevents this by:
+SEAL prevents this by:
 
 - Binding every tool call to the agent's ephemeral key via Ed25519 signature (non-repudiation)
 - Binding the agent key to a `SecurityContext` via the signed JWT (bounded authorization)
@@ -165,14 +165,14 @@ SMCP prevents this by:
 
 | Term | Definition |
 | ------ | ----------- |
-| **SmcpEnvelope** | Signed wrapper around each MCP tool call |
+| **SealEnvelope** | Signed wrapper around each MCP tool call |
 | **Attestation** | One-time handshake; agent proves public key + workload ID, receives JWT |
 | **security_token** | JWT (SecurityToken) binding agent to SecurityContext; wire format field name |
 | **SecurityContext** | Named permission boundary with capabilities + deny list |
 | **Capability** | Fine-grained allow rule with optional path/command/domain/rate constraints |
-| **SmcpSession** | Aggregate: agent keypair + token + SecurityContext for one execution |
+| **SealSession** | Aggregate: agent keypair + token + SecurityContext for one execution |
 | **PolicyEngine** | Gateway component; evaluates deny list → capabilities → default deny |
-| **Confused Deputy** | Attack class SMCP prevents; unauthorized tool call via privileged proxy |
+| **Confused Deputy** | Attack class SEAL prevents; unauthorized tool call via privileged proxy |
 | **Canonical message** | Sorted-key compact JSON over which signature is computed |
 | **Ephemeral keypair** | Ed25519 keys generated per-session, never persisted |
 | **workload_id** | Caller-supplied identifier for the current execution (e.g., execution UUID) |

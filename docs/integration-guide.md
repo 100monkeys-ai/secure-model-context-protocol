@@ -1,31 +1,31 @@
 # Integration Guide
 
-This guide explains how SMCP fits into an orchestrator stack, how to deploy a Gateway, and how to define `SecurityContext`s for your agents.
+This guide explains how SEAL fits into an orchestrator stack, how to deploy a Gateway, and how to define `SecurityContext`s for your agents.
 
 ---
 
-## Where SMCP Sits in the Stack
+## Where SEAL Sits in the Stack
 
-SMCP operates at the **protocol layer**, on top of the physical security boundary already provided by the Orchestrator Proxy pattern.
+SEAL operates at the **protocol layer**, on top of the physical security boundary already provided by the Orchestrator Proxy pattern.
 
 ```markdown
 ┌─────────────────────────────────────────────────────────────┐
 │                         Agent Container                     │
-│  SMCP SDK:  generate keypair → attest → sign envelopes      │
+│  SEAL SDK:  generate keypair → attest → sign envelopes      │
 └──────────────────────────────┬──────────────────────────────┘
-                               │  SmcpEnvelope (over TLS)
+                               │  SealEnvelope (over TLS)
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Orchestrator — SmcpMiddleware                │
+│                   Orchestrator — SealMiddleware                │
 │                                                             │
 │  Physical layer:  Orchestrator Proxy Pattern                │
 │    - All agent tool calls physically route through here     │
 │    - Internal tools executed via Runtime::exec()            │
 │    - External tools executed with orchestrator credentials  │
 │                                                             │
-│  Protocol layer:  SMCP                                      │
+│  Protocol layer:  SEAL                                      │
 │    - AttestationService: verify workload, issue JWT         │
-│    - SmcpMiddleware: verify signature, validate JWT         │
+│    - SealMiddleware: verify signature, validate JWT         │
 │    - PolicyEngine (Cedar): evaluate SecurityContext         │
 │    - Unwrap → forward plain MCP to Tool Server              │
 └──────────────────────────────┬──────────────────────────────┘
@@ -33,19 +33,19 @@ SMCP operates at the **protocol layer**, on top of the physical security boundar
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                        Tool Server                          │
-│  (No SMCP awareness — receives ordinary MCP JSON-RPC)       │
+│  (No SEAL awareness — receives ordinary MCP JSON-RPC)       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-The physical proxy layer ensures requests are routed correctly and credentials are held by the orchestrator, not agents. SMCP adds protocol-level identity and authorization enforcement. Both layers are required; neither alone provides complete security.
+The physical proxy layer ensures requests are routed correctly and credentials are held by the orchestrator, not agents. SEAL adds protocol-level identity and authorization enforcement. Both layers are required; neither alone provides complete security.
 
 ---
 
 ## Gateway Endpoints
 
-The SMCP Gateway exposes two endpoints:
+The SEAL Gateway exposes two endpoints:
 
-### `POST /v1/smcp/attest`
+### `POST /v1/seal/attest`
 
 **Request body:**
 
@@ -64,7 +64,7 @@ The SMCP Gateway exposes two endpoints:
   "status": "attested",
   "security_token": "<JWT>",
   "expires_at": "2026-02-21T13:00:00Z",
-  "session_id": "<SmcpSession UUID>"
+  "session_id": "<SealSession UUID>"
 }
 ```
 
@@ -73,9 +73,9 @@ The SMCP Gateway exposes two endpoints:
 - `401` — workload identity could not be verified (error code `3000` or `3002`)
 - `403` — requested `SecurityContext` not found (error code `3001`)
 
-### `POST /v1/smcp/invoke`
+### `POST /v1/seal/invoke`
 
-**Request body:** A complete `SmcpEnvelope` JSON object.
+**Request body:** A complete `SealEnvelope` JSON object.
 
 **Success response (200):**
 
@@ -231,7 +231,7 @@ Namespace isolation ensures that two tenants with a `SecurityContext` named `res
 
 ## Audit Event Integration
 
-Every SMCP operation should publish domain events to an audit event store. These events power the audit trail and compliance reporting:
+Every SEAL operation should publish domain events to an audit event store. These events power the audit trail and compliance reporting:
 
 | Event | Description |
 | ------- | ------------- |
@@ -247,18 +247,18 @@ Every SMCP operation should publish domain events to an audit event store. These
 
 ## Phase 2: Firecracker + VSOCK Transport
 
-SMCP is transport-agnostic. In the current Docker-based deployment, the agent communicates with the Gateway over TCP/TLS. In the Phase 2 Firecracker deployment:
+SEAL is transport-agnostic. In the current Docker-based deployment, the agent communicates with the Gateway over TCP/TLS. In the Phase 2 Firecracker deployment:
 
-- The `SmcpEnvelope` is transmitted over VSOCK (virtual socket between the MicroVM and host).
+- The `SealEnvelope` is transmitted over VSOCK (virtual socket between the MicroVM and host).
 - No changes to the agent-side SDK are required — the envelope format and endpoints are identical.
-- The Gateway-side `SmcpMiddleware` adds a VSOCK listener alongside the existing TCP listener.
+- The Gateway-side `SealMiddleware` adds a VSOCK listener alongside the existing TCP listener.
 
-This is possible because the `SmcpEnvelope` is transport-agnostic: it contains all the identity and authorization information needed for stateless verification, regardless of how it was delivered.
+This is possible because the `SealEnvelope` is transport-agnostic: it contains all the identity and authorization information needed for stateless verification, regardless of how it was delivered.
 
 ---
 
 ## Further Reading
 
-- [RFC smcp-v1-specification](../RFC/smcp-v1-specification.md) — full protocol specification including test vectors and compliance mapping
+- [RFC seal-v1-specification](../RFC/seal-v1-specification.md) — full protocol specification including test vectors and compliance mapping
 - [OpenBao Transit Engine](https://openbao.org/docs/secrets/transit/) — encryption-as-a-service for Gateway key signing
 - [Cedar Policy Language](https://www.cedarpolicy.com/) — declarative policy engine for SecurityContext evaluation

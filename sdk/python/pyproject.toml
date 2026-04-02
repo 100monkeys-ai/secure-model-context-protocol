@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "smcp"
-description = "A Python client wrapper for the Secure Model Context Protocol (SMCP)"
+name = "seal"
+description = "A Python client wrapper for the Signed Envelope Attestation Layer (SEAL)"
 readme = "README.md"
 authors = [
     { name = "100monkeys.ai", email = "info@100monkeys.ai" }
@@ -16,7 +16,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-keywords = ["smcp", "mcp", "ai", "agents", "security"]
+keywords = ["seal", "mcp", "ai", "agents", "security"]
 dependencies = [
     "cryptography>=41.0.0",
     "requests>=2.30.0",
@@ -31,4 +31,4 @@ dev = [
 ]
 
 [tool.hatch.version]
-path = "smcp/__init__.py"
+path = "seal/__init__.py"

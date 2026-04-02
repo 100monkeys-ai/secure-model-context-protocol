@@ -1,8 +1,8 @@
 {
-    "name": "@100monkeys-ai/smcp",
+    "name": "@100monkeys-ai/seal",
     "version": "0.14.0-pre-alpha",
     "type": "module",
-    "description": "TypeScript client wrapper for the Secure Model Context Protocol (SMCP)",
+    "description": "TypeScript client wrapper for the Signed Envelope Attestation Layer (SEAL)",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -16,7 +16,7 @@
         "url": "git+https://github.com/100monkeys-ai/secure-model-context-protocol.git"
     },
     "keywords": [
-        "smcp",
+        "seal",
         "mcp",
         "security",
         "ai",

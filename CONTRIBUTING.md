@@ -1,6 +1,6 @@
-# Contributing to Secure Model Context Protocol
+# Contributing to Signed Envelope Attestation Layer
 
-Thank you for your interest in contributing to SMCP. This project has three contribution tracks:
+Thank you for your interest in contributing to SEAL. This project has three contribution tracks:
 
 1. [RFC Protocol Changes](#rfc-protocol-changes) — changes to the wire format or protocol semantics
 2. [Python SDK](#python-sdk)
@@ -28,7 +28,7 @@ Read the relevant section below before opening a PR. All contributions are subje
 
 ## RFC Protocol Changes
 
-The `RFC/smcp-v1-specification.md` document is the canonical definition of the SMCP wire format. SDKs conform to it.
+The `RFC/seal-v1-specification.md` document is the canonical definition of the SEAL wire format. SDKs conform to it.
 
 **Important naming note:** The wire format field is `security_token` (RFC-authoritative). Internal implementations may alias this field name in their type systems as needed, but must serialize to `security_token` on the wire. SDK implementations (Python, TypeScript) and all external/wire usage use `security_token`.
 
@@ -36,7 +36,7 @@ The `RFC/smcp-v1-specification.md` document is the canonical definition of the S
 
 1. **Open an issue** describing the protocol change, the problem it solves, and any backward-compatibility implications.
 2. Wait for maintainer acknowledgment before drafting RFC text.
-3. Submit a PR to `RFC/smcp-v1-specification.md` with your changes clearly marked with the section being modified.
+3. Submit a PR to `RFC/seal-v1-specification.md` with your changes clearly marked with the section being modified.
 4. RFC changes require consensus from at least two maintainers before merge, given the protocol stability implications.
 5. Protocol changes that break backward compatibility must include a migration path and bump the protocol version.
 

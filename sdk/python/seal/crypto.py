@@ -5,9 +5,9 @@ from cryptography.hazmat.primitives import serialization
 
 class Ed25519Key:
     """
-    Manages ephemeral Ed25519 cryptographic keys for the SMCP Protocol.
+    Manages ephemeral Ed25519 cryptographic keys for the SEAL Protocol.
     Keys are generated dynamically and stored only in memory per execution
-    for high security according to the SMCP spec.
+    for high security according to the SEAL spec.
     """
     
     def __init__(self, private_key: Ed25519PrivateKey = None):

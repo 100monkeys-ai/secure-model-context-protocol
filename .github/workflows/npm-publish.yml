@@ -48,7 +48,7 @@ jobs:
         run: npm test
 
   publish:
-    name: Publish @100monkeys-ai/smcp
+    name: Publish @100monkeys-ai/seal
     needs: verify
     runs-on: ubuntu-latest
 
@@ -73,10 +73,10 @@ jobs:
       - name: Publish package
         run: |
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
-            echo "🔍 DRY RUN: Would publish @100monkeys-ai/smcp"
+            echo "🔍 DRY RUN: Would publish @100monkeys-ai/seal"
             npm publish --dry-run
           else
-            echo "📦 Publishing @100monkeys-ai/smcp to GitHub Packages..."
+            echo "📦 Publishing @100monkeys-ai/seal to GitHub Packages..."
             npm publish
           fi
         env:
@@ -107,7 +107,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.VERSION }}
-          name: "@100monkeys-ai/smcp ${{ steps.version.outputs.VERSION }}"
+          name: "@100monkeys-ai/seal ${{ steps.version.outputs.VERSION }}"
           draft: false
           prerelease: ${{ steps.version.outputs.IS_PRERELEASE == 'true' }}
           generate_release_notes: true

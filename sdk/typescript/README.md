@@ -1,10 +1,10 @@
-# SMCP TypeScript SDK
+# SEAL TypeScript SDK
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../../LICENSE)
 [![Node.js](https://img.shields.io/badge/node-20%2B-blue)](https://nodejs.org/)
 [![Version](https://img.shields.io/badge/version-0.1.0-green)](package.json)
 
-TypeScript/Node.js client SDK for the [Secure Model Context Protocol (SMCP)](../../README.md). Wraps MCP tool calls in cryptographically signed `SmcpEnvelope`s and handles the attestation handshake.
+TypeScript/Node.js client SDK for the [Signed Envelope Attestation Layer (SEAL)](../../README.md). Wraps MCP tool calls in cryptographically signed `SealEnvelope`s and handles the attestation handshake.
 
 ---
 
@@ -20,7 +20,7 @@ TypeScript/Node.js client SDK for the [Secure Model Context Protocol (SMCP)](../
 **From npm (once published):**
 
 ```bash
-npm install @100monkeys/smcp
+npm install @100monkeys/seal
 ```
 
 **From source:**
@@ -39,9 +39,9 @@ npm run build
 ### Step 1 — Instantiate the client
 
 ```typescript
-import { SMCPClient } from "@100monkeys/smcp";
+import { SEALClient } from "@100monkeys/seal";
 
-const client = new SMCPClient(
+const client = new SEALClient(
   "https://your-gateway.example.com", // gateway URL
   "exec-abc123",                       // workload ID for this session
   "research-safe",                     // SecurityContext name
@@ -63,7 +63,7 @@ The token is stored internally and used automatically on subsequent calls.
 
 ```typescript
 const result = await client.callTool("web_search", {
-  query: "SMCP specification",
+  query: "SEAL specification",
 });
 console.log(result);
 ```
@@ -71,9 +71,9 @@ console.log(result);
 ### Full example
 
 ```typescript
-import { SMCPClient } from "@100monkeys/smcp";
+import { SEALClient } from "@100monkeys/seal";
 
-const client = new SMCPClient(
+const client = new SEALClient(
   "https://gateway.example.com",
   "exec-abc123",
   "research-safe",
@@ -95,25 +95,25 @@ try {
 
 ## API Reference
 
-### `SMCPClient`
+### `SEALClient`
 
 ```typescript
-new SMCPClient(gatewayUrl: string, workloadId: string, securityScope: string)
+new SEALClient(gatewayUrl: string, workloadId: string, securityScope: string)
 ```
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `gatewayUrl` | `string` | Base URL of the SMCP Gateway (no trailing slash) |
+| `gatewayUrl` | `string` | Base URL of the SEAL Gateway (no trailing slash) |
 | `workloadId` | `string` | Unique identifier for the current execution session |
 | `securityScope` | `string` | Name of the `SecurityContext` to request at attestation |
 
 #### `attest(): Promise<string>`
 
-Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gatewayUrl}/v1/smcp/attest`. Returns the `security_token` JWT string. Throws `SMCPError` on failure.
+Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gatewayUrl}/v1/seal/attest`. Returns the `security_token` JWT string. Throws `SEALError` on failure.
 
 #### `callTool(toolName: string, arguments: Record<string, unknown>): Promise<unknown>`
 
-Builds an MCP JSON-RPC `tools/call` payload, wraps it in a signed `SmcpEnvelope`, and sends it to `POST {gatewayUrl}/v1/smcp/invoke`. Returns the `result` field from the response payload. Throws `SMCPError` on Gateway rejection.
+Builds an MCP JSON-RPC `tools/call` payload, wraps it in a signed `SealEnvelope`, and sends it to `POST {gatewayUrl}/v1/seal/invoke`. Returns the `result` field from the response payload. Throws `SEALError` on Gateway rejection.
 
 Must be called after `attest()`.
 
@@ -126,7 +126,7 @@ Zeroes out the ephemeral private key bytes in memory. Call this when the client 
 ### `Ed25519Key`
 
 ```typescript
-import { Ed25519Key } from "@100monkeys/smcp";
+import { Ed25519Key } from "@100monkeys/seal";
 
 const key = await Ed25519Key.generate();
 ```
@@ -142,23 +142,23 @@ const key = await Ed25519Key.generate();
 
 ---
 
-### `createSmcpEnvelope`
+### `createSealEnvelope`
 
 ```typescript
-import { createSmcpEnvelope } from "@100monkeys/smcp";
+import { createSealEnvelope } from "@100monkeys/seal";
 
-const envelope = await createSmcpEnvelope(
+const envelope = await createSealEnvelope(
   "eyJ...",                          // security_token JWT
   { jsonrpc: "2.0", method: "..." }, // MCP payload
   key,                               // Ed25519Key
 );
 ```
 
-Returns an `SmcpEnvelope` object:
+Returns an `SealEnvelope` object:
 
 ```typescript
-interface SmcpEnvelope {
-  protocol: "smcp/v1";
+interface SealEnvelope {
+  protocol: "seal/v1";
   security_token: string;  // JWT
   signature: string;       // Base64-encoded Ed25519 signature
   payload: McpPayload;     // The original MCP JSON-RPC payload
@@ -169,7 +169,7 @@ interface SmcpEnvelope {
 ### `createCanonicalMessage`
 
 ```typescript
-import { createCanonicalMessage } from "@100monkeys/smcp";
+import { createCanonicalMessage } from "@100monkeys/seal";
 
 const messageBytes = createCanonicalMessage(
   "eyJ...",                         // security_token
@@ -182,33 +182,33 @@ Returns a `Uint8Array` of the UTF-8 encoded canonical JSON (sorted keys, no whit
 
 ---
 
-### `verifySmcpEnvelope`
+### `verifySealEnvelope`
 
 ```typescript
-import { verifySmcpEnvelope } from "@100monkeys/smcp/server";
+import { verifySealEnvelope } from "@100monkeys/seal/server";
 
-const mcpPayload = await verifySmcpEnvelope(
+const mcpPayload = await verifySealEnvelope(
   envelope,
   publicKeyBytes,
   30 // maxAgeSeconds
 );
 ```
 
-Server-side primitive to verify an incoming `SmcpEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
+Server-side primitive to verify an incoming `SealEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
 
 ---
 
 ## Error Handling
 
 ```typescript
-import { SMCPClient, SMCPError } from "@100monkeys/smcp";
+import { SEALClient, SEALError } from "@100monkeys/seal";
 
-const client = new SMCPClient("https://gateway.example.com", "exec-1", "research-safe");
+const client = new SEALClient("https://gateway.example.com", "exec-1", "research-safe");
 
 try {
   await client.attest();
 } catch (e) {
-  if (e instanceof SMCPError) {
+  if (e instanceof SEALError) {
     // e.message contains the Gateway error body
     console.error("Attestation failed:", e.message);
   }
@@ -217,13 +217,13 @@ try {
 try {
   await client.callTool("filesystem.write", { path: "/etc/passwd" });
 } catch (e) {
-  // SMCPError thrown for 4xx/5xx responses
+  // SEALError thrown for 4xx/5xx responses
   // 403 → PolicyViolation (path not in capability allowlist)
-  console.error("Tool call blocked:", (e as SMCPError).message);
+  console.error("Tool call blocked:", (e as SEALError).message);
 }
 ```
 
-SMCP error code ranges (RFC §8):
+SEAL error code ranges (RFC §8):
 
 | Range | Category |
 | ------- | ---------- |

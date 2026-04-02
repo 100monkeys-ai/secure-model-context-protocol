@@ -13,7 +13,7 @@ export interface McpPayload {
 /**
  * High-fidelity wrapping envelope structure capturing security rules.
  */
-export interface SmcpEnvelope {
+export interface SealEnvelope {
     protocol: string;
     security_token: string;
     signature: string;
@@ -75,13 +75,13 @@ function stableStringify(obj: unknown): string {
 }
 
 /**
- * Wrap an MCP JSON-RPC payload in an SMCP Security Envelope v1.
+ * Wrap an MCP JSON-RPC payload in a SEAL Security Envelope v1.
  */
-export async function createSmcpEnvelope(
+export async function createSealEnvelope(
     securityToken: string,
     mcpPayload: McpPayload,
     privateKey: Ed25519Key
-): Promise<SmcpEnvelope> {
+): Promise<SealEnvelope> {
     const now = new Date();
 
     // Create precisely formatted timestamps
@@ -98,7 +98,7 @@ export async function createSmcpEnvelope(
     const signatureB64 = await privateKey.signBase64(canonicalBytes);
 
     return {
-        protocol: 'smcp/v1',
+        protocol: 'seal/v1',
         security_token: securityToken,
         signature: signatureB64,
         payload: mcpPayload,

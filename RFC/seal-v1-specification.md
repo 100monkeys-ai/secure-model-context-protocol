@@ -1,4 +1,4 @@
-# RFC: Secure Model Context Protocol (SMCP) v1.0
+# RFC: Signed Envelope Attestation Layer (SEAL) v1.0
 
 **Network Working Group**  
 **Request for Comments: XXXX**  
@@ -8,7 +8,7 @@
 
 | **Metadata** | **Details** |
 | -------------- | ------------- |
-| **Title** | Secure Model Context Protocol (SMCP) v1.0 |
+| **Title** | Signed Envelope Attestation Layer (SEAL) v1.0 |
 | **Version** | 1.0.0 |
 | **Status** | Proposed Standard |
 | **Date** | February 2026 |
@@ -21,9 +21,9 @@
 
 ## Abstract
 
-This document specifies the **Secure Model Context Protocol (SMCP)**, an extension to the Model Context Protocol (MCP) that adds cryptographic authentication, authorization, and integrity protection for AI agent-tool interactions. SMCP addresses critical security vulnerabilities in autonomous AI systems, specifically the "Confused Deputy" problem, lack of non-repudiation, and insufficient authorization granularity.
+This document specifies the **Signed Envelope Attestation Layer (SEAL)**, an extension to the Model Context Protocol (MCP) that adds cryptographic authentication, authorization, and integrity protection for AI agent-tool interactions. SEAL addresses critical security vulnerabilities in autonomous AI systems, specifically the "Confused Deputy" problem, lack of non-repudiation, and insufficient authorization granularity.
 
-SMCP introduces a **Security Envelope** pattern that wraps standard MCP JSON-RPC messages with cryptographic signatures and authorization tokens. This extension maintains backward compatibility with existing MCP tool servers while enabling fine-grained, per-request security policy enforcement.
+SEAL introduces a **Security Envelope** pattern that wraps standard MCP JSON-RPC messages with cryptographic signatures and authorization tokens. This extension maintains backward compatibility with existing MCP tool servers while enabling fine-grained, per-request security policy enforcement.
 
 The protocol is designed for zero-trust environments where AI agents may be compromised through prompt injection or code vulnerabilities, yet must be prevented from misusing their assigned tools.
 
@@ -132,7 +132,7 @@ This gap creates significant security risks in autonomous AI systems, particular
 3. **Multi-tenancy is required** - Different agents need different permission levels
 4. **Compliance is mandatory** - SOC 2, GDPR, HIPAA require audit trails with non-repudiation
 
-SMCP addresses these gaps by extending MCP with a **Security Envelope** pattern that adds cryptographic authentication, fine-grained authorization, and integrity protection while maintaining compatibility with existing MCP tool servers.
+SEAL addresses these gaps by extending MCP with a **Security Envelope** pattern that adds cryptographic authentication, fine-grained authorization, and integrity protection while maintaining compatibility with existing MCP tool servers.
 
 ### 1.2. Requirements Notation
 
@@ -143,9 +143,9 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 This specification uses the following terms:
 
 - **MCP (Model Context Protocol)**: The base protocol defined by Anthropic for AI agent-tool communication via JSON-RPC
-- **SMCP (Secure Model Context Protocol)**: This security extension layer
+- **SEAL (Signed Envelope Attestation Layer)**: This security extension layer
 - **Client**: The AI agent or autonomous system making tool requests (untrusted)
-- **Gateway**: The trusted intermediary that enforces SMCP policies (trusted)
+- **Gateway**: The trusted intermediary that enforces SEAL policies (trusted)
 - **Tool Server**: The backend service providing MCP tools (may be trusted or untrusted)
 - **Security Envelope**: The outer wrapper containing signature, token, and inner MCP payload
 - **Security Token**: A JWT proving client identity and assigned Security Scope
@@ -160,7 +160,7 @@ This specification uses the following terms:
 
 ## 2. Threat Model
 
-This section describes the security threats that SMCP is designed to mitigate.
+This section describes the security threats that SEAL is designed to mitigate.
 
 ### 2.1. Confused Deputy Attack
 
@@ -177,7 +177,7 @@ This section describes the security threats that SMCP is designed to mitigate.
 6. Tool server executes the command (SECURITY BREACH)
 ```
 
-**SMCP Mitigation**: The agent's Security Scope does not include "fs.delete" capability, so the Gateway rejects the request before it reaches the tool server.
+**SEAL Mitigation**: The agent's Security Scope does not include "fs.delete" capability, so the Gateway rejects the request before it reaches the tool server.
 
 ### 2.2. Prompt Injection
 
@@ -185,7 +185,7 @@ This section describes the security threats that SMCP is designed to mitigate.
 
 **Attack Vector**: Untrusted content (web pages, documents, API responses) can contain instructions that override the agent's original task.
 
-**SMCP Mitigation**: Even if prompt injection succeeds in changing agent behavior, the agent cannot escape its cryptographically signed Security Scope. A "read-only-research" agent cannot suddenly perform write operations.
+**SEAL Mitigation**: Even if prompt injection succeeds in changing agent behavior, the agent cannot escape its cryptographically signed Security Scope. A "read-only-research" agent cannot suddenly perform write operations.
 
 ### 2.3. Tool Server Impersonation
 
@@ -193,11 +193,11 @@ This section describes the security threats that SMCP is designed to mitigate.
 
 **Attack Vector**: Compromised deployment pipeline, man-in-the-middle attack, or insider threat.
 
-**SMCP Mitigation**: While not fully addressed in v1.0, SMCP's Security Envelope provides integrity protection. Future versions will include tool server attestation via code signing or hardware-backed provenance.
+**SEAL Mitigation**: While not fully addressed in v1.0, SEAL's Security Envelope provides integrity protection. Future versions will include tool server attestation via code signing or hardware-backed provenance.
 
 ### 2.4. Security Objectives
 
-SMCP aims to achieve the following security properties:
+SEAL aims to achieve the following security properties:
 
 1. **Authentication**: Cryptographic proof of client identity
 2. **Authorization**: Fine-grained, per-request policy enforcement
@@ -212,7 +212,7 @@ SMCP aims to achieve the following security properties:
 
 ### 3.1. Component Roles
 
-SMCP defines three primary components:
+SEAL defines three primary components:
 
 #### 3.1.1. Client (AI Agent)
 
@@ -248,11 +248,11 @@ SMCP defines three primary components:
 
 **Trust Level**: VARIES (may be first-party or third-party)
 
-**Note**: Tool servers have NO awareness of SMCP. They receive unwrapped, standard MCP messages.
+**Note**: Tool servers have NO awareness of SEAL. They receive unwrapped, standard MCP messages.
 
 ### 3.2. Trust Model
 
-SMCP operates on the following trust assumptions:
+SEAL operates on the following trust assumptions:
 
 1. **Gateway is trusted**: The Gateway is the root of trust, running in a secure environment with access to KMS
 2. **Clients are untrusted**: Clients may be compromised and attempt to exceed their permissions
@@ -262,7 +262,7 @@ SMCP operates on the following trust assumptions:
 
 ### 3.3. Protocol Layers
 
-SMCP adds a security layer around standard MCP:
+SEAL adds a security layer around standard MCP:
 
 ```markdown
 ┌──────────────────────────────────────────────────────────┐
@@ -271,7 +271,7 @@ SMCP adds a security layer around standard MCP:
                            │
                            ▼
 ┌──────────────────────────────────────────────────────────┐
-│       SMCP Layer (Security Envelope + Signature)         │  ← NEW
+│       SEAL Layer (Security Envelope + Signature)         │  ← NEW
 └──────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -291,11 +291,11 @@ SMCP adds a security layer around standard MCP:
 
 ### 4.1. Security Envelope Structure
 
-All SMCP messages MUST use the following JSON structure:
+All SEAL messages MUST use the following JSON structure:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "<JWT_STRING>",
   "signature": "<BASE64_SIGNATURE>",
   "payload": {
@@ -309,7 +309,7 @@ All SMCP messages MUST use the following JSON structure:
 
 **`protocol`** (string, REQUIRED)
 
-- MUST be exactly `"smcp/v1"` for this specification
+- MUST be exactly `"seal/v1"` for this specification
 - Enables protocol version negotiation in future versions
 
 **`security_token`** (string, REQUIRED)
@@ -341,7 +341,7 @@ All SMCP messages MUST use the following JSON structure:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZ2VudC04YTlmN2IiLCJzY3AiOiJyZWFkLW9ubHktcmVzZWFyY2giLCJ3aWQiOiJkb2NrZXI6Ly84YTlmN2IzYyIsImlhdCI6MTcwODI2MTkyMSwiZXhwIjoxNzA4MjY1NTIxfQ.signature_here",
   "signature": "3k9j2lV8d+QpL7mN1wR/xY4zP0aB6sC8tE2uF9gH5iJ3kK7lM4nO0pQ1rS9tU0vW",
   "payload": {
@@ -385,7 +385,7 @@ The following claims MUST be present:
 - `iat` (Issued At): Unix timestamp when token was issued
 - `exp` (Expires): Unix timestamp when token expires
 
-**SMCP-Specific Claims**:
+**SEAL-Specific Claims**:
 
 - `scp` (Security Scope): Name of the assigned Security Scope (see [Section 5.1](#51-security-scope))
 - `wid` (Workload Identity): Verifiable identifier for the execution environment (e.g., container ID)
@@ -407,7 +407,7 @@ The following claims MUST be present:
   "exp": 1708265521,
   "jti": "session-9d8f2e1c",
   "aud": "gateway.example.com",
-  "iss": "smcp-gateway"
+  "iss": "seal-gateway"
 }
 ```
 
@@ -452,7 +452,7 @@ See [Section 7.3](#73-canonical-message-construction) for detailed algorithm.
 
 ## 5. Authorization Model
 
-SMCP implements a capability-based authorization model with deny-by-default semantics.
+SEAL implements a capability-based authorization model with deny-by-default semantics.
 
 ### 5.1. Security Scope
 
@@ -659,7 +659,7 @@ Client                          Gateway                         KMS
 
 #### 6.2.1. Attestation Request
 
-**Method**: `POST /v1/smcp/attest`
+**Method**: `POST /v1/seal/attest`
 
 **Request Body**:
 
@@ -733,7 +733,7 @@ Gateways MAY maintain session state for active clients:
 
 ### 7.1. Signature Algorithm (Ed25519)
 
-SMCP MUST use Ed25519 signatures as defined in [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032.txt).
+SEAL MUST use Ed25519 signatures as defined in [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032.txt).
 
 #### 7.1.1. Algorithm Parameters
 
@@ -861,7 +861,7 @@ def construct_canonical_message(security_token, payload, timestamp_iso):
 
 #### 7.4.3. Supported KMS Providers
 
-SMCP is agnostic to KMS implementation. Recommended providers:
+SEAL is agnostic to KMS implementation. Recommended providers:
 
 - AWS Key Management Service (AWS KMS)
 - Google Cloud Key Management (Cloud KMS)
@@ -876,7 +876,7 @@ SMCP is agnostic to KMS implementation. Recommended providers:
 
 ### 8.1. Error Codes
 
-SMCP defines the following error codes:
+SEAL defines the following error codes:
 
 | Code | Name | Description |
 | ------ | ------ | ------------- |
@@ -900,13 +900,13 @@ SMCP defines the following error codes:
 
 ### 8.2. Error Response Format
 
-#### 8.2.1. SMCP Error Response
+#### 8.2.1. SEAL Error Response
 
 When a Gateway rejects a request, it MUST respond with:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "status": "error",
   "error": {
     "code": "<ERROR_CODE>",
@@ -924,7 +924,7 @@ When a Gateway rejects a request, it MUST respond with:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "status": "error",
   "error": {
     "code": "POLICY_VIOLATION_PATH_NOT_ALLOWED",
@@ -943,7 +943,7 @@ When a Gateway rejects a request, it MUST respond with:
 
 #### 8.2.3. HTTP Status Codes
 
-| SMCP Error Code Range | HTTP Status | Description |
+| SEAL Error Code Range | HTTP Status | Description |
 | ----------------------- | ------------- | ------------- |
 | 1000-1999 (Envelope/Token) | 401 Unauthorized | Authentication failure |
 | 2000-2999 (Policy) | 403 Forbidden | Authorization failure |
@@ -976,7 +976,7 @@ When a Gateway rejects a request, it MUST respond with:
 **Mitigation**:
 
 1. **Signature Integrity**: Any modification to the `payload`, `security_token`, or `timestamp` invalidates the Ed25519 signature
-2. **Transport Security**: All SMCP communication MUST use TLS 1.3 or later
+2. **Transport Security**: All SEAL communication MUST use TLS 1.3 or later
 3. **Token Binding** (FUTURE WORK): Future versions may bind Security Tokens to the TLS session
 
 **Implementation Guidance**:
@@ -1039,7 +1039,7 @@ When a Gateway rejects a request, it MUST respond with:
 
 ### 9.6. Audit Trail
 
-**Security Requirement**: All SMCP operations MUST be logged for forensic analysis.
+**Security Requirement**: All SEAL operations MUST be logged for forensic analysis.
 
 **Required Audit Events**:
 
@@ -1064,11 +1064,11 @@ When a Gateway rejects a request, it MUST respond with:
 
 ### 10.1. Protocol Negotiation
 
-SMCP-capable Gateways SHOULD support both SMCP and legacy MCP clients during a migration period.
+SEAL-capable Gateways SHOULD support both SEAL and legacy MCP clients during a migration period.
 
 #### 10.1.1. Capability Advertisement
 
-During MCP initialization, Gateways SHOULD advertise SMCP support:
+During MCP initialization, Gateways SHOULD advertise SEAL support:
 
 **MCP Initialization Response**:
 
@@ -1087,10 +1087,10 @@ During MCP initialization, Gateways SHOULD advertise SMCP support:
       "version": "1.0.0"
     },
     "extensions": {
-      "smcp": {
+      "seal": {
         "supported": true,
         "version": "v1",
-        "attestation_endpoint": "/v1/smcp/attest"
+        "attestation_endpoint": "/v1/seal/attest"
       }
     }
   }
@@ -1099,20 +1099,20 @@ During MCP initialization, Gateways SHOULD advertise SMCP support:
 
 #### 10.1.2. Client Detection
 
-Clients can detect SMCP support by:
+Clients can detect SEAL support by:
 
-1. Checking for `extensions.smcp.supported == true` in initialization response
+1. Checking for `extensions.seal.supported == true` in initialization response
 2. Checking if attestation endpoint responds with HTTP 200 (not 404)
 
 ### 10.2. Legacy Client Support
 
 #### 10.2.1. Fallback Mode
 
-Gateways MAY allow legacy (non-SMCP) clients if configured with:
+Gateways MAY allow legacy (non-SEAL) clients if configured with:
 
 ```json
 {
-  "smcp": {
+  "seal": {
     "required": false,
     "legacy_scope": "default-restricted"
   }
@@ -1122,15 +1122,15 @@ Gateways MAY allow legacy (non-SMCP) clients if configured with:
 - `required: false` allows legacy clients
 - `legacy_scope` assigns a default Security Scope to unauthenticated clients
 
-**Security Warning**: This reduces security to pre-SMCP levels. RECOMMENDED only for transition periods.
+**Security Warning**: This reduces security to pre-SEAL levels. RECOMMENDED only for transition periods.
 
 #### 10.2.2. Upgrade Path
 
 ```markdown
-Phase 1: Deploy SMCP-capable Gateway (smcp.required = false)
-Phase 2: Update clients to support SMCP attestation
-Phase 3: Monitor metrics (% of requests using SMCP)
-Phase 4: Enable enforcement (smcp.required = true)
+Phase 1: Deploy SEAL-capable Gateway (seal.required = false)
+Phase 2: Update clients to support SEAL attestation
+Phase 3: Monitor metrics (% of requests using SEAL)
+Phase 4: Enable enforcement (seal.required = true)
 Phase 5: Remove legacy code paths
 ```
 
@@ -1150,7 +1150,7 @@ Required changes for existing MCP clients:
 2. **Implement Attestation**
 
    ```python
-   response = requests.post(f"{gateway_url}/v1/smcp/attest", json={
+   response = requests.post(f"{gateway_url}/v1/seal/attest", json={
        "public_key": base64.b64encode(public_key_bytes).decode(),
        "workload_id": os.environ.get("WORKLOAD_ID"),
        "requested_scope": "read-only-research"
@@ -1161,8 +1161,8 @@ Required changes for existing MCP clients:
 3. **Wrap MCP Calls in Security Envelopes**
 
    ```python
-   envelope = create_smcp_envelope(security_token, mcp_payload, private_key)
-   response = requests.post(f"{gateway_url}/v1/smcp/invoke", json=envelope)
+   envelope = create_seal_envelope(security_token, mcp_payload, private_key)
+   response = requests.post(f"{gateway_url}/v1/seal/invoke", json=envelope)
    ```
 
 **Estimated Engineering Effort**: 1-2 days per client project
@@ -1177,7 +1177,7 @@ Required changes for existing MCP clients:
 
 ### 11.1. Test Vectors
 
-This section provides test vectors for verifying SMCP implementations.
+This section provides test vectors for verifying SEAL implementations.
 
 #### 11.1.1. Test Vector 1: Valid Security Envelope
 
@@ -1228,7 +1228,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LWFnZW50LTEyMyIsInNjcCI6InJ
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LWFnZW50LTEyMyIsInNjcCI6InJlYWQtb25seS1yZXNlYXJjaCIsIndpZCI6ImRvY2tlcjovL3Rlc3QiLCJpYXQiOjE3MDgyNjE5MjEsImV4cCI6MTcwODI2NTUyMX0.signature_placeholder",
   "signature": "<COMPUTED_SIGNATURE_BASE64>",
   "payload": {
@@ -1252,7 +1252,7 @@ Take Test Vector 1 and modify the payload's `path` to `/etc/passwd`:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "<SAME_TOKEN_AS_VECTOR_1>",
   "signature": "<SAME_SIGNATURE_AS_VECTOR_1>",
   "payload": {
@@ -1290,7 +1290,7 @@ Use Test Vector 1 but set `exp` claim to a past timestamp:
 
 ### 11.2. Compliance Requirements
 
-An SMCP implementation is compliant if it:
+A SEAL implementation is compliant if it:
 
 1. ✅ Correctly generates and verifies Ed25519 signatures (RFC 8032)
 2. ✅ Implements canonical message construction as specified in [Section 7.3](#73-canonical-message-construction)
@@ -1305,21 +1305,21 @@ An SMCP implementation is compliant if it:
 
 ### 12.1. Protocol Identifier Registry
 
-IANA is requested to create a registry for SMCP protocol versions:
+IANA is requested to create a registry for SEAL protocol versions:
 
-**Registry Name**: Secure Model Context Protocol (SMCP) Versions
+**Registry Name**: Signed Envelope Attestation Layer (SEAL) Versions
 
 | Version String | Specification | Status |
 | ---------------- | --------------- | -------- |
-| `smcp/v1` | This document (RFC XXXX) | Current |
+| `seal/v1` | This document (RFC XXXX) | Current |
 
 **Registration Procedure**: RFC Required
 
 ### 12.2. Error Code Registry
 
-IANA is requested to create a registry for SMCP error codes:
+IANA is requested to create a registry for SEAL error codes:
 
-**Registry Name**: SMCP Error Codes
+**Registry Name**: SEAL Error Codes
 
 **Range**: 1000-9999
 
@@ -1347,7 +1347,7 @@ IANA is requested to register the following JWT claim names in the JSON Web Toke
 
 IANA is requested to create a registry for standard Security Scope names:
 
-**Registry Name**: SMCP Standard Security Scopes
+**Registry Name**: SEAL Standard Security Scopes
 
 **Purpose**: Reserve well-known scope names to prevent conflicts
 
@@ -1560,7 +1560,7 @@ from datetime import datetime
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 
-class SMCPClient:
+class SEALClient:
     def __init__(self, gateway_url, workload_id, security_scope):
         self.gateway_url = gateway_url
         self.workload_id = workload_id
@@ -1584,7 +1584,7 @@ class SMCPClient:
         
         # Send attestation request
         response = requests.post(
-            f"{self.gateway_url}/v1/smcp/attest",
+            f"{self.gateway_url}/v1/seal/attest",
             json={
                 "public_key": public_key_b64,
                 "workload_id": self.workload_id,
@@ -1600,7 +1600,7 @@ class SMCPClient:
         print(f"Attestation successful. Token expires: {data['expires_at']}")
         
     def call_tool(self, tool_name, arguments):
-        """Make SMCP-wrapped tool call"""
+        """Make SEAL-wrapped tool call"""
         # Construct MCP payload
         mcp_payload = {
             "jsonrpc": "2.0",
@@ -1627,7 +1627,7 @@ class SMCPClient:
         signature_b64 = base64.b64encode(signature).decode()
         
         envelope = {
-            "protocol": "smcp/v1",
+            "protocol": "seal/v1",
             "security_token": self.security_token,
             "signature": signature_b64,
             "payload": mcp_payload,
@@ -1636,22 +1636,22 @@ class SMCPClient:
         
         # Send to gateway
         response = requests.post(
-            f"{self.gateway_url}/v1/smcp/invoke",
+            f"{self.gateway_url}/v1/seal/invoke",
             json=envelope,
             timeout=30
         )
         response.raise_for_status()
         
         # Parse response
-        smcp_response = response.json()
-        if smcp_response["status"] == "error":
-            raise Exception(f"SMCP Error: {smcp_response['error']['message']}")
+        seal_response = response.json()
+        if seal_response["status"] == "error":
+            raise Exception(f"SEAL Error: {seal_response['error']['message']}")
         
-        return smcp_response["payload"]["result"]
+        return seal_response["payload"]["result"]
 
 # Usage
 if __name__ == "__main__":
-    client = SMCPClient(
+    client = SEALClient(
         gateway_url="https://gateway.example.com",
         workload_id=os.environ.get("WORKLOAD_ID", "docker://localhost"),
         security_scope="read-only-research"
@@ -1668,18 +1668,18 @@ if __name__ == "__main__":
 ### B.2. Gateway Implementation (Pseudocode)
 
 ```rust
-// Pseudocode for SMCP Gateway middleware
+// Pseudocode for SEAL Gateway middleware
 
-async fn handle_smcp_request(
-    envelope: SmcpEnvelope,
+async fn handle_seal_request(
+    envelope: SealEnvelope,
     kms: &KeyManagementService,
     session_manager: &SessionManager,
     policy_engine: &PolicyEngine,
-) -> Result<Value, SmcpError> {
+) -> Result<Value, SealError> {
     // 1. Verify Security Token (JWT)
     let claims = kms.verify_jwt(&envelope.security_token)?;
     if claims.exp < current_unix_timestamp() {
-        return Err(SmcpError::TokenExpired);
+        return Err(SealError::TokenExpired);
     }
     
     // 2. Load session (contains public key)
@@ -1696,7 +1696,7 @@ async fn handle_smcp_request(
     // 4. Check timestamp freshness (replay protection)
     let age_seconds = current_unix_timestamp() - parse_iso8601(&envelope.timestamp)?;
     if age_seconds > 30 {
-        return Err(SmcpError::StaleTimestamp);
+        return Err(SealError::StaleTimestamp);
     }
     
     // 5. Extract tool call details
@@ -1784,11 +1784,11 @@ e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155
 
 ## Appendix D: Compliance Mapping
 
-This appendix maps SMCP features to common compliance frameworks.
+This appendix maps SEAL features to common compliance frameworks.
 
 ### D.1. SOC 2 Type II
 
-| Control | SMCP Feature | Evidence |
+| Control | SEAL Feature | Evidence |
 | --------- | -------------- | ---------- |
 | CC6.1 - Logical Access | Security Scopes with capability-based authorization | Security Scope definitions in version control |
 | CC6.2 - Authentication | Ed25519 cryptographic signatures + attestation | Audit log of attestation successes |
@@ -1798,7 +1798,7 @@ This appendix maps SMCP features to common compliance frameworks.
 
 ### D.2. GDPR (EU Regulation 2016/679)
 
-| Article | Requirement | SMCP Mitigation |
+| Article | Requirement | SEAL Mitigation |
 | --------- | ------------- | ----------------- |
 | Article 32 - Security | "Appropriate technical measures" | Ed25519 signatures, JWT tokens, encryption in transit (TLS 1.3) |
 | Article 30 - Records | "Records of processing activities" | Audit log with timestamp, client ID, tool, arguments |
@@ -1806,7 +1806,7 @@ This appendix maps SMCP features to common compliance frameworks.
 
 ### D.3. NIST AI Risk Management Framework
 
-| Function | Category | SMCP Control |
+| Function | Category | SEAL Control |
 | ---------- | ---------- | -------------- |
 | Govern | GOVERN 1.3 - Third-party risk | Tool server isolation, Security Scope enforcement |
 | Map | MAP 1.2 - Categorization | Security Scope taxonomy (read-only, code-assistant, etc.) |
@@ -1815,19 +1815,19 @@ This appendix maps SMCP features to common compliance frameworks.
 
 ### D.4. ISO/IEC 27001:2022
 
-| Control | SMCP Implementation |
+| Control | SEAL Implementation |
 | --------- | --------------------- |
 | A.9.2.1 - User registration | Attestation protocol with workload identity verification |
 | A.9.2.2 - Privileged access | Security Scopes with least privilege principle |
 | A.9.2.4 - Review of user access rights | Security Scope definitions in code review |
 | A.9.4.1 - Information access restriction | Deny-by-default policy evaluation |
-| A.12.4.1 - Event logging | SMCP audit events with cryptographic proof |
+| A.12.4.1 - Event logging | SEAL audit events with cryptographic proof |
 
 ---
 
 ## Appendix E: Future Work
 
-The following topics are considered for future versions of SMCP:
+The following topics are considered for future versions of SEAL:
 
 ### E.1. Tool Server Attestation
 
@@ -1845,7 +1845,7 @@ The following topics are considered for future versions of SMCP:
 
 **Proposed Solution**:
 
-- Define standard policy language (Cedar, OPA Rego, or SMCP-specific DSL)
+- Define standard policy language (Cedar, OPA Rego, or SEAL-specific DSL)
 - Create JSON Schema for portable Security Scope definitions
 - Enable cross-platform Security Scope sharing
 

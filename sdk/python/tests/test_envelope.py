@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 import pytest
 
-from smcp.crypto import Ed25519Key
-from smcp.envelope import create_canonical_message, create_smcp_envelope
+from seal.crypto import Ed25519Key
+from seal.envelope import create_canonical_message, create_seal_envelope
 
 def test_canonical_message_construction():
     """Verify JSON canonicalization per RFC 8032 test cases."""
@@ -28,14 +28,14 @@ def test_canonical_message_construction():
     assert canonical_bytes == expected_canonical_bytes
 
 def test_envelope_creation():
-    """Verify that an SMCP Envelope can structure correctly."""
+    """Verify that a SEAL Envelope can structure correctly."""
     key = Ed25519Key.generate()
     payload = {"jsonrpc": "2.0", "id": 1, "method": "test"}
     token = "test.token.jwt"
     
-    envelope = create_smcp_envelope(security_token=token, mcp_payload=payload, private_key=key)
+    envelope = create_seal_envelope(security_token=token, mcp_payload=payload, private_key=key)
     
-    assert envelope["protocol"] == "smcp/v1"
+    assert envelope["protocol"] == "seal/v1"
     assert envelope["security_token"] == token
     assert envelope["payload"] == payload
     assert "signature" in envelope

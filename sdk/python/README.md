@@ -1,10 +1,10 @@
-# SMCP Python SDK
+# SEAL Python SDK
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../../LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![Version](https://img.shields.io/badge/version-0.1.0-green)](pyproject.toml)
 
-Python client SDK for the [Secure Model Context Protocol (SMCP)](../../README.md). Wraps MCP tool calls in cryptographically signed `SmcpEnvelope`s and handles the attestation handshake.
+Python client SDK for the [Signed Envelope Attestation Layer (SEAL)](../../README.md). Wraps MCP tool calls in cryptographically signed `SealEnvelope`s and handles the attestation handshake.
 
 ---
 
@@ -20,7 +20,7 @@ Python client SDK for the [Secure Model Context Protocol (SMCP)](../../README.md
 **From PyPI (once published):**
 
 ```bash
-pip install smcp
+pip install seal
 ```
 
 **Editable install from source:**
@@ -38,9 +38,9 @@ pip install -e "sdk/python[dev]"
 ### Step 1 — Instantiate the client
 
 ```python
-from smcp import SMCPClient
+from seal import SEALClient
 
-client = SMCPClient(
+client = SEALClient(
     gateway_url="https://your-gateway.example.com",
     workload_id="exec-abc123",          # Unique ID for this execution session
     security_scope="research-safe",     # Named SecurityContext on the Gateway
@@ -60,12 +60,12 @@ The token is stored internally. You do not need to pass it to subsequent calls.
 
 ### Step 3 — Call a tool
 
-Each call to `call_tool()` automatically wraps the MCP payload in a signed `SmcpEnvelope` and sends it to the Gateway.
+Each call to `call_tool()` automatically wraps the MCP payload in a signed `SealEnvelope` and sends it to the Gateway.
 
 ```python
 result = client.call_tool(
     "web_search",
-    {"query": "SMCP specification"},
+    {"query": "SEAL specification"},
 )
 print(result)
 ```
@@ -73,9 +73,9 @@ print(result)
 ### Full example
 
 ```python
-from smcp import SMCPClient
+from seal import SEALClient
 
-client = SMCPClient(
+client = SEALClient(
     gateway_url="https://gateway.example.com",
     workload_id="exec-abc123",
     security_scope="research-safe",
@@ -97,27 +97,27 @@ del client  # or let it go out of scope
 
 ## API Reference
 
-### `SMCPClient`
+### `SEALClient`
 
 ```python
-SMCPClient(gateway_url: str, workload_id: str, security_scope: str)
+SEALClient(gateway_url: str, workload_id: str, security_scope: str)
 ```
 
 | Parameter | Type | Description |
 | ----------- | ------ | ------------- |
-| `gateway_url` | `str` | Base URL of the SMCP Gateway (no trailing slash) |
+| `gateway_url` | `str` | Base URL of the SEAL Gateway (no trailing slash) |
 | `workload_id` | `str` | Unique identifier for the current execution session |
 | `security_scope` | `str` | Name of the `SecurityContext` to request at attestation |
 
 #### `attest() -> str`
 
-Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gateway_url}/v1/smcp/attest`. Stores the returned `security_token` internally. Returns the raw JWT string.
+Generates an ephemeral Ed25519 keypair and performs the attestation handshake against `POST {gateway_url}/v1/seal/attest`. Stores the returned `security_token` internally. Returns the raw JWT string.
 
 Raises `requests.HTTPError` if the Gateway rejects the request.
 
 #### `call_tool(tool_name: str, arguments: dict) -> dict`
 
-Builds an MCP JSON-RPC payload for `tools/call`, wraps it in a signed `SmcpEnvelope`, sends it to `POST {gateway_url}/v1/smcp/invoke`, and returns `response["payload"]["result"]`.
+Builds an MCP JSON-RPC payload for `tools/call`, wraps it in a signed `SealEnvelope`, sends it to `POST {gateway_url}/v1/seal/invoke`, and returns `response["payload"]["result"]`.
 
 Must be called after `attest()`.
 
@@ -126,7 +126,7 @@ Must be called after `attest()`.
 ### `Ed25519Key`
 
 ```python
-from smcp import Ed25519Key
+from seal import Ed25519Key
 
 key = Ed25519Key.generate()
 ```
@@ -142,12 +142,12 @@ key = Ed25519Key.generate()
 
 ---
 
-### `create_smcp_envelope`
+### `create_seal_envelope`
 
 ```python
-from smcp import create_smcp_envelope
+from seal import create_seal_envelope
 
-envelope = create_smcp_envelope(
+envelope = create_seal_envelope(
     security_token="eyJ...",    # JWT from attest()
     mcp_payload={"jsonrpc": "2.0", ...},
     private_key=key,
@@ -158,7 +158,7 @@ Returns a `dict` with the fields:
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "<JWT>",
   "signature": "<Base64-Ed25519>",
   "payload": { "<MCP JSON-RPC>" },
@@ -169,7 +169,7 @@ Returns a `dict` with the fields:
 ### `create_canonical_message`
 
 ```python
-from smcp import create_canonical_message
+from seal import create_canonical_message
 
 message_bytes = create_canonical_message(
     security_token="eyJ...",
@@ -182,19 +182,19 @@ Returns the UTF-8 encoded bytes of the deterministic canonical JSON (sorted keys
 
 ---
 
-### `verify_smcp_envelope`
+### `verify_seal_envelope`
 
 ```python
-from smcp.server import verify_smcp_envelope
+from seal.server import verify_seal_envelope
 
-payload = verify_smcp_envelope(
-    envelope={"protocol": "smcp/v1", ...},
+payload = verify_seal_envelope(
+    envelope={"protocol": "seal/v1", ...},
     public_key_bytes=key.get_public_key_bytes(),
     max_age_seconds=30
 )
 ```
 
-Server-side primitive to verify an incoming `SmcpEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
+Server-side primitive to verify an incoming `SealEnvelope`. Reconstructs the canonical message, cryptographically verifies the Ed25519 signature, and checks the timestamp against the allowed replay window to securely unwrap the inner MCP payload.
 
 ---
 
@@ -202,9 +202,9 @@ Server-side primitive to verify an incoming `SmcpEnvelope`. Reconstructs the can
 
 ```python
 import requests
-from smcp import SMCPClient
+from seal import SEALClient
 
-client = SMCPClient("https://gateway.example.com", "exec-1", "research-safe")
+client = SEALClient("https://gateway.example.com", "exec-1", "research-safe")
 
 try:
     client.attest()
@@ -220,7 +220,7 @@ except requests.HTTPError as e:
     print(f"Tool call blocked: {e.response.status_code}")
 ```
 
-SMCP error codes returned in the response body follow the RFC §8 classification:
+SEAL error codes returned in the response body follow the RFC §8 classification:
 
 | Range | Category |
 | ------- | ---------- |

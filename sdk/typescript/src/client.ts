@@ -1,5 +1,5 @@
 import { Ed25519Key } from './crypto';
-import { createSmcpEnvelope, McpPayload } from './envelope';
+import { createSealEnvelope, McpPayload } from './envelope';
 import crypto from 'crypto';
 
 type AttestationResponse = {
@@ -22,19 +22,19 @@ type InvokeResponse = {
     };
 };
 
-export class SMCPError extends Error {
+export class SEALError extends Error {
     constructor(message: string) {
         super(message);
-        this.name = 'SMCPError';
+        this.name = 'SEALError';
     }
 }
 
 /**
  * A TypeScript client wrapper for generating ephemeral keys, interacting
- * with an SMCP Gateway to undergo an attestation handshake, and securely
- * wrapping Model Context Protocol (MCP) message calls leveraging SMCP.
+ * with a SEAL Gateway to undergo an attestation handshake, and securely
+ * wrapping Model Context Protocol (MCP) message calls leveraging SEAL.
  */
-export class SMCPClient {
+export class SEALClient {
     private gatewayUrl: string;
     private workloadId: string;
     private securityScope: string;
@@ -60,7 +60,7 @@ export class SMCPClient {
             requested_scope: this.securityScope,
         };
 
-        const response = await fetch(`${this.gatewayUrl}/v1/smcp/attest`, {
+        const response = await fetch(`${this.gatewayUrl}/v1/seal/attest`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -71,15 +71,15 @@ export class SMCPClient {
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             if (errorData && errorData.error && errorData.error.message) {
-                throw new SMCPError(`Attestation failed: ${errorData.error.message}`);
+                throw new SEALError(`Attestation failed: ${errorData.error.message}`);
             }
-            throw new SMCPError(`Attestation failed: HTTP ${response.status}`);
+            throw new SEALError(`Attestation failed: HTTP ${response.status}`);
         }
 
         const data = (await response.json()) as AttestationResponse;
 
         if (data.status === 'error') {
-            throw new SMCPError(`Attestation failed: ${data.message || 'Unknown error'}`);
+            throw new SEALError(`Attestation failed: ${data.message || 'Unknown error'}`);
         }
 
         this.securityToken = data.security_token ?? null;
@@ -87,11 +87,11 @@ export class SMCPClient {
     }
 
     /**
-     * Make an SMCP-wrapped JSON-RPC method call to a tool passing through the Gateway.
+     * Make a SEAL-wrapped JSON-RPC method call to a tool passing through the Gateway.
      */
     public async callTool(toolName: string, argumentsObj: Record<string, unknown>): Promise<unknown> {
         if (!this.securityToken || !this.key) {
-            throw new SMCPError('No security token available. Must call attest() first.');
+            throw new SEALError('No security token available. Must call attest() first.');
         }
 
         const reqId = `req-${crypto.randomBytes(4).toString('hex')}`;
@@ -106,13 +106,13 @@ export class SMCPClient {
             },
         };
 
-        const envelope = await createSmcpEnvelope(
+        const envelope = await createSealEnvelope(
             this.securityToken,
             mcpPayload,
             this.key
         );
 
-        const response = await fetch(`${this.gatewayUrl}/v1/smcp/invoke`, {
+        const response = await fetch(`${this.gatewayUrl}/v1/seal/invoke`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -124,19 +124,19 @@ export class SMCPClient {
 
         if (!response.ok) {
             if (responseData?.error?.message) {
-                throw new SMCPError(`SMCP Gateway Rejected: ${responseData.error.message}`);
+                throw new SEALError(`SEAL Gateway Rejected: ${responseData.error.message}`);
             }
-            throw new SMCPError(`SMCP Gateway error: HTTP ${response.status}`);
+            throw new SEALError(`SEAL Gateway error: HTTP ${response.status}`);
         }
 
         if (responseData?.status === 'error' && responseData.error?.message) {
-            throw new SMCPError(`SMCP Gateway Error: ${responseData.error.message}`);
+            throw new SEALError(`SEAL Gateway Error: ${responseData.error.message}`);
         }
 
         const payload = (responseData?.payload ?? {}) as NonNullable<InvokeResponse['payload']>;
 
         if (payload.error) {
-            throw new SMCPError(`MCP Tool Error: ${JSON.stringify(payload.error)}`);
+            throw new SEALError(`MCP Tool Error: ${JSON.stringify(payload.error)}`);
         }
 
         return payload.result || {};

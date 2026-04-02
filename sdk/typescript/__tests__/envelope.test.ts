@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
-import { createCanonicalMessage, createSmcpEnvelope, McpPayload } from '../src/envelope';
+import { createCanonicalMessage, createSealEnvelope, McpPayload } from '../src/envelope';
 import { Ed25519Key } from '../src/crypto';
 
-describe('SMCP Envelope Canonicalization', () => {
+describe('SEAL Envelope Canonicalization', () => {
     it('should match RFC 8032 test cases exactly', () => {
         const securityToken = 'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ0ZXN0In0.c2lnbmF0dXJl';
         const payload: McpPayload = { jsonrpc: '2.0', id: 1, method: 'test' };
@@ -29,9 +29,9 @@ describe('SMCP Envelope Canonicalization', () => {
         const payload: McpPayload = { jsonrpc: '2.0', id: 1, method: 'test' };
         const token = 'test.token.jwt';
 
-        const envelope = await createSmcpEnvelope(token, payload, key);
+        const envelope = await createSealEnvelope(token, payload, key);
 
-        expect(envelope.protocol).toBe('smcp/v1');
+        expect(envelope.protocol).toBe('seal/v1');
         expect(envelope.security_token).toBe(token);
         expect(envelope.payload).toEqual(payload);
         expect(typeof envelope.signature).toBe('string');

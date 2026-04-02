@@ -1,9 +1,9 @@
 import * as ed from '@noble/ed25519';
 
 /**
- * Manages ephemeral Ed25519 cryptographic keys for the SMCP Protocol.
+ * Manages ephemeral Ed25519 cryptographic keys for the SEAL Protocol.
  * Keys are generated dynamically and stored only in memory per execution
- * for high security according to the SMCP spec.
+ * for high security according to the SEAL spec.
  */
 export class Ed25519Key {
     private privateKey: Uint8Array | null = null;

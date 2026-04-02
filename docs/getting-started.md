@@ -1,12 +1,12 @@
-# Getting Started with SMCP
+# Getting Started with SEAL
 
-This guide walks you through making your first cryptographically secured tool call using SMCP, from zero to a signed, authorized request.
+This guide walks you through making your first cryptographically secured tool call using SEAL, from zero to a signed, authorized request.
 
 ---
 
 ## What You Need Before Starting
 
-- An SMCP-compatible Gateway URL (e.g., `https://gateway.example.com`)
+- A SEAL-compatible Gateway URL (e.g., `https://gateway.example.com`)
 - A `SecurityContext` name defined on that Gateway (e.g., `research-safe`)
 - A `workload_id` that identifies your current execution session (e.g., a UUID or execution ID)
 
@@ -14,24 +14,24 @@ If you are deploying a Gateway, see the [Integration Guide](integration-guide.md
 
 ---
 
-## How SMCP Works in Three Steps
+## How SEAL Works in Three Steps
 
 ```markdown
 1. Generate ephemeral Ed25519 keypair (client side, never stored)
          │
          ▼
-2. Attest  ─── POST /v1/smcp/attest ──►  Gateway
+2. Attest  ─── POST /v1/seal/attest ──►  Gateway
          ◄── security_token (JWT) ────────┘
          │
          ▼
-3. Call tool with signed SmcpEnvelope
+3. Call tool with signed SealEnvelope
          │
          ├── security_token  (JWT, proves identity + SecurityContext)
          ├── signature       (Ed25519 over canonical message)
          ├── payload         (standard MCP JSON-RPC tools/call)
          └── timestamp       (Unix integer, replay prevention)
          │
-         ─── POST /v1/smcp/invoke ──►  Gateway
+         ─── POST /v1/seal/invoke ──►  Gateway
                                           │  verify sig
                                           │  validate JWT
                                           │  check timestamp ±30s
@@ -46,7 +46,7 @@ If you are deploying a Gateway, see the [Integration Guide](integration-guide.md
 ### Python (Install)
 
 ```bash
-pip install smcp
+pip install seal
 # or from source:
 pip install -e "sdk/python[dev]"
 ```
@@ -54,7 +54,7 @@ pip install -e "sdk/python[dev]"
 ### TypeScript (Install)
 
 ```bash
-npm install @100monkeys/smcp
+npm install @100monkeys/seal
 # or from source:
 cd sdk/typescript && npm install && npm run build
 ```
@@ -63,12 +63,12 @@ cd sdk/typescript && npm install && npm run build
 
 ## Step 2: Generate a Keypair
 
-SMCP uses **ephemeral Ed25519 keypairs** — generated fresh for each execution session, never written to disk.
+SEAL uses **ephemeral Ed25519 keypairs** — generated fresh for each execution session, never written to disk.
 
 ### Python (Generate a Keypair)
 
 ```python
-from smcp import Ed25519Key
+from seal import Ed25519Key
 
 key = Ed25519Key.generate()
 print("Public key:", key.get_public_key_base64())
@@ -78,7 +78,7 @@ print("Public key:", key.get_public_key_base64())
 ### TypeScript (Generate a Keypair)
 
 ```typescript
-import { Ed25519Key } from "@100monkeys/smcp";
+import { Ed25519Key } from "@100monkeys/seal";
 
 const key = await Ed25519Key.generate();
 console.log("Public key:", key.getPublicKeyBase64());
@@ -93,9 +93,9 @@ Send your public key and `workload_id` to the Gateway. The Gateway verifies your
 ### Python (Attest)
 
 ```python
-from smcp import SMCPClient
+from seal import SEALClient
 
-client = SMCPClient(
+client = SEALClient(
     gateway_url="https://gateway.example.com",
     workload_id="exec-abc123",
     security_scope="research-safe",
@@ -108,9 +108,9 @@ print("Attested. Token:", token[:30] + "...")
 ### TypeScript (Attest)
 
 ```typescript
-import { SMCPClient } from "@100monkeys/smcp";
+import { SEALClient } from "@100monkeys/seal";
 
-const client = new SMCPClient(
+const client = new SEALClient(
   "https://gateway.example.com",
   "exec-abc123",
   "research-safe",
@@ -131,7 +131,7 @@ Each `call_tool` / `callTool` invocation automatically:
 1. Builds the MCP JSON-RPC payload
 2. Creates a canonical message (sorted-key JSON, UTF-8 encoded)
 3. Signs it with the ephemeral private key
-4. Wraps everything in a `SmcpEnvelope`
+4. Wraps everything in a `SealEnvelope`
 5. Sends it to the Gateway
 
 ### Python
@@ -174,7 +174,7 @@ client.dispose();  // zeroes key bytes in memory
 Use `try/finally` in production to ensure cleanup even if a call throws:
 
 ```typescript
-const client = new SMCPClient(url, workloadId, scope);
+const client = new SEALClient(url, workloadId, scope);
 try {
   await client.attest();
   const result = await client.callTool("my_tool", { arg: "value" });
@@ -186,11 +186,11 @@ try {
 
 ---
 
-## What a `SmcpEnvelope` Looks Like
+## What a `SealEnvelope` Looks Like
 
 ```json
 {
-  "protocol": "smcp/v1",
+  "protocol": "seal/v1",
   "security_token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJleGVjLWFiYzEyMyIsImN0eCI6InJlc2VhcmNoLXNhZmUiLCJleHAiOjE3NDAwMDM2MDB9.<sig>",
   "signature": "BASE64_ED25519_SIGNATURE",
   "payload": {
@@ -214,5 +214,5 @@ The **`security_token`** field is the canonical wire format name (per RFC). The 
 
 - [Concepts](concepts.md) — understand `SecurityContext`, `Capability`, `PolicyEngine`, and the full domain model
 - [SDK Reference](sdk-reference.md) — complete Python and TypeScript API documentation
-- [Integration Guide](integration-guide.md) — deploy a Gateway, define `SecurityContext`s, and integrate SMCP into your orchestration layer
+- [Integration Guide](integration-guide.md) — deploy a Gateway, define `SecurityContext`s, and integrate SEAL into your orchestration layer
 - [Security](security.md) — threat model, cryptographic choices, and compliance details
