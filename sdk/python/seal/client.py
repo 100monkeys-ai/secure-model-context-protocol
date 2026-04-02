@@ -58,7 +58,7 @@ class SEALClient:
             json={
                 "public_key": self.key.get_public_key_base64(),
                 "workload_id": self.workload_id,
-                "requested_scope": self.security_scope
+                "security_context": self.security_scope
             },
             timeout=10
         )

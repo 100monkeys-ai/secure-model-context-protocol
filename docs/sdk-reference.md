@@ -41,7 +41,7 @@ Performs the SEAL attestation handshake:
    {
      "public_key": "<Base64 Ed25519 public key>",
      "workload_id": "<workload_id>",
-     "requested_scope": "<security_scope>"
+     "security_context": "<security_scope>"
    }
    ```
 
@@ -235,7 +235,7 @@ Performs the SEAL attestation handshake:
    {
      "public_key": "<Base64 Ed25519 public key>",
      "workload_id": "<workloadId>",
-     "requested_scope": "<securityScope>"
+     "security_context": "<securityScope>"
    }
    ```
 

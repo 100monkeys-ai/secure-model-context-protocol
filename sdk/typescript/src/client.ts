@@ -70,7 +70,7 @@ export class SEALClient {
         const requestBody = {
             public_key: this.key.getPublicKeyBase64(),
             workload_id: this.workloadId,
-            requested_scope: this.securityScope,
+            security_context: this.securityScope,
         };
 
         const response = await fetch(`${this.gatewayUrl}/v1/seal/attest`, {

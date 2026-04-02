@@ -53,7 +53,7 @@ The SEAL Gateway exposes two endpoints:
 {
   "public_key": "<Base64 Ed25519 public key>",
   "workload_id": "<execution session ID>",
-  "requested_scope": "<SecurityContext name>"
+  "security_context": "<SecurityContext name>"
 }
 ```
 
