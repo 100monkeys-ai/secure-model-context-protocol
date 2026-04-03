@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Protocol](https://img.shields.io/badge/protocol-seal%2Fv1-blue)](RFC/seal-v1-specification.md)
 [![Python SDK](https://img.shields.io/badge/python_sdk-0.1.0-green)](sdk/python)
-[![TypeScript SDK](https://img.shields.io/badge/typescript_sdk-0.1.0-green)](sdk/typescript)
+[![TypeScript SDK](https://img.shields.io/badge/typescript_sdk-0.14.0--pre--alpha-green)](sdk/typescript)
 
 SEAL is a cryptographic transport protocol that wraps any JSON
 payload in a signed, attested envelope — providing cryptographic
