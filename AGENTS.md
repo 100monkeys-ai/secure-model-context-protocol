@@ -1,1 +1,0 @@
-../aegis-architecture/AGENTS.md
