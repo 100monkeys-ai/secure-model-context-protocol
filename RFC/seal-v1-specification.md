@@ -394,14 +394,14 @@ The following claims MUST be present:
 
 **Standard Claims (RFC 7519)**:
 
-- `sub` (Subject): Client identifier (unique string, e.g., UUID)
+- `sub` (Subject): Client/agent identifier (UUID). This is the canonical agent identity claim — there is no separate `agent_id` claim in SEAL.
 - `iat` (Issued At): Unix timestamp when token was issued
 - `exp` (Expires): Unix timestamp when token expires
 
 **SEAL-Specific Claims**:
 
-- `scp` (SecurityContext): Short wire name for the assigned SecurityContext (see [Section 5.1](#51-securitycontext))
-- `wid` (Workload Identity): Verifiable identifier for the execution environment (e.g., container ID)
+- `scp` (SecurityContext, REQUIRED): Short wire name for the assigned SecurityContext (see [Section 5.1](#51-securitycontext))
+- `wid` (Workload Identity, REQUIRED): Verifiable identifier for the execution environment (e.g., container ID)
 
 **Optional Claims**:
 
@@ -411,7 +411,7 @@ The following claims MUST be present:
 
 **Extension Claims**:
 
-- `exec_id` (Execution ID, RECOMMENDED): Execution correlation identifier. Binds all tool calls from a single execution to one audit chain. When present, Gateways SHOULD include this value in all audit events for that session.
+- `exec_id` (Execution ID): Execution correlation identifier. Binds all tool calls from a single execution to one audit chain. REQUIRED for SEAL implementations that use execution-scoped sessions (i.e., when session lookup is keyed by execution ID, as AEGIS does). OPTIONAL for stateless SEAL implementations that do not have execution-scoped sessions. When present, Gateways MUST include this value in all audit events for that session.
 - `tenant_id` (Tenant ID, OPTIONAL): Multi-tenant routing identifier. Used by multi-tenant gateway deployments to partition sessions, tool registries, and audit logs. Gateways MAY use this claim for routing and isolation decisions.
 
 #### 4.2.3. Example JWT Claims
@@ -770,7 +770,7 @@ Orchestrator                    Gateway                         KMS
   │    the caller)                │                               │
   │                               │                               │
   │──2. POST /v1/seal/sessions──>│                               │
-  │   {execution_id, agent_id,   │                               │
+  │   {execution_id, sub (UUID), │                               │
   │    security_context_name,     │                               │
   │    public_key_b64}            │                               │
   │                               │──3. Sign Token───────────────>│
@@ -798,7 +798,7 @@ The provisioned session record MUST contain the following fields:
 | Field | Type | Description |
 | --- | --- | --- |
 | `execution_id` | string (UUID) | Correlation identifier for the caller execution |
-| `agent_id` | string | Logical caller identity |
+| `sub` | string (UUID) | Caller identity — canonical agent identifier (maps to the `sub` JWT claim) |
 | `security_context_name` | string | Named security context to apply |
 | `public_key_b64` | string (base64) | Caller's ephemeral Ed25519 public key |
 | `security_token` | string (JWT) | Pre-issued SEAL token for the caller |
@@ -866,7 +866,7 @@ Expired and Revoked are terminal states. A new session MUST be created to restor
 ```json
 {
   "execution_id": "550e8400-e29b-41d4-a716-446655440000",
-  "agent_id": "code-assistant-7",
+  "sub": "8a9f7b3c-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
   "security_context_name": "code-assistant",
   "public_key_b64": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
   "allowed_tool_patterns": ["fs.*", "cmd.run", "web.search"]
