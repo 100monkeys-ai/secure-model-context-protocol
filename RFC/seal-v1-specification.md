@@ -412,7 +412,7 @@ The following claims MUST be present:
 **Extension Claims**:
 
 - `exec_id` (Execution ID): Execution correlation identifier. Binds all tool calls from a single execution to one audit chain. REQUIRED for SEAL implementations that use execution-scoped sessions (i.e., when session lookup is keyed by execution ID, as AEGIS does). OPTIONAL for stateless SEAL implementations that do not have execution-scoped sessions. When present, Gateways MUST include this value in all audit events for that session.
-- `tenant_id` (Tenant ID, OPTIONAL): Multi-tenant routing identifier. Used by multi-tenant gateway deployments to partition sessions, tool registries, and audit logs. Gateways MAY use this claim for routing and isolation decisions.
+- `tenant_id` (Tenant ID, OPTIONAL): Multi-tenant routing identifier. Used by multi-tenant gateway deployments to partition sessions, tool registries, and audit logs. Gateways MAY use this claim for routing and isolation decisions. In the Proxy/Orchestrator Deployment Model (see [Section 6.4](#64-proxyorchestrator-deployment-model)), orchestrators SHOULD populate `tenant_id` in the provisioned session record rather than relying solely on this claim, ensuring tenant context is available without JWT decode on each request.
 
 #### 4.2.3. Example JWT Claims
 
@@ -800,6 +800,7 @@ The provisioned session record MUST contain the following fields:
 | `execution_id` | string (UUID) | Correlation identifier for the caller execution |
 | `sub` | string (UUID) | Caller identity — canonical agent identifier (maps to the `sub` JWT claim) |
 | `security_context_name` | string | Named security context to apply |
+| `tenant_id` | string (slug) | Tenant scope for this session. RECOMMENDED for multi-tenant deployments. When present, the gateway MUST use this value for all tenant-scoped authorization and routing decisions for this session. When absent, the gateway MAY derive tenant context from the `tenant_id` JWT claim or from the execution record identified by `execution_id`. |
 | `public_key_b64` | string (base64) | Caller's ephemeral Ed25519 public key |
 | `security_token` | string (JWT) | Pre-issued SEAL token for the caller |
 | `expires_at` | string (ISO 8601) | Token expiry timestamp |
