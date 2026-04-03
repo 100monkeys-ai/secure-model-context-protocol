@@ -91,21 +91,27 @@ Copyright (C) 2026. This document may be reproduced and distributed in accordanc
     10.2. [Node Attestation](#102-node-attestation)  
     10.3. [Node Key Management](#103-node-key-management)  
     10.4. [Applicable Operations](#104-applicable-operations)  
-11. [Backward Compatibility](#11-backward-compatibility)  
-    11.1. [Protocol Negotiation](#111-protocol-negotiation)  
-    11.2. [Legacy Client Support](#112-legacy-client-support)  
-    11.3. [Migration Strategy](#113-migration-strategy)  
-12. [Interoperability](#12-interoperability)  
-    12.1. [Test Vectors](#121-test-vectors)  
-    12.2. [Compliance Requirements](#122-compliance-requirements)  
-13. [IANA Considerations](#13-iana-considerations)  
-    13.1. [Protocol Identifier Registry](#131-protocol-identifier-registry)  
-    13.2. [Error Code Registry](#132-error-code-registry)  
-    13.3. [JWT Claim Names Registry](#133-jwt-claim-names-registry)  
-    13.4. [SecurityContext Registry](#134-securitycontext-registry)  
-14. [References](#14-references)  
-    14.1. [Normative References](#141-normative-references)  
-    14.2. [Informative References](#142-informative-references)  
+11. [Tool Server Attestation Model](#11-tool-server-attestation-model)  
+    11.1. [Capability-Grant vs. Server-Certificate Attestation](#111-capability-grant-vs-server-certificate-attestation)  
+    11.2. [Two-Domain Topology](#112-two-domain-topology)  
+    11.3. [Gateway Enforcement Requirements](#113-gateway-enforcement-requirements)  
+    11.4. [Capability Patterns and Constraints](#114-capability-patterns-and-constraints)  
+    11.5. [Security Properties](#115-security-properties)  
+12. [Backward Compatibility](#12-backward-compatibility)  
+    12.1. [Protocol Negotiation](#121-protocol-negotiation)  
+    12.2. [Legacy Client Support](#122-legacy-client-support)  
+    12.3. [Migration Strategy](#123-migration-strategy)  
+13. [Interoperability](#13-interoperability)  
+    13.1. [Test Vectors](#131-test-vectors)  
+    13.2. [Compliance Requirements](#132-compliance-requirements)  
+14. [IANA Considerations](#14-iana-considerations)  
+    14.1. [Protocol Identifier Registry](#141-protocol-identifier-registry)  
+    14.2. [Error Code Registry](#142-error-code-registry)  
+    14.3. [JWT Claim Names Registry](#143-jwt-claim-names-registry)  
+    14.4. [SecurityContext Registry](#144-securitycontext-registry)  
+15. [References](#15-references)  
+    15.1. [Normative References](#151-normative-references)  
+    15.2. [Informative References](#152-informative-references)  
 Appendix A: [SecurityContext Examples](#appendix-a-securitycontext-examples)  
 Appendix B: [Implementation Guidelines](#appendix-b-implementation-guidelines)  
 Appendix C: [Test Vectors](#appendix-c-test-vectors)  
@@ -1386,13 +1392,94 @@ All other SEAL security properties apply: signature verification, timestamp fres
 
 ---
 
-## 11. Backward Compatibility
+## 11. Tool Server Attestation Model
 
-### 11.1. Protocol Negotiation
+SEAL defines tool server trust through a **capability-grant attestation model** rather than per-server certificate exchange. This section defines the model, its two-domain topology, and the enforcement requirements for conformant implementations.
+
+### 11.1. Capability-Grant vs. Server-Certificate Attestation
+
+Traditional tool server attestation requires each tool server to present a certificate or token proving its identity before receiving requests. SEAL takes a fundamentally different approach: **the orchestrator attests the capability grant, not the tool server**.
+
+Under this model:
+
+- Tools are not registered as servers with individual identities
+- Tool access is defined as **capability patterns** within a `SecurityContext`, scoped to a specific execution session
+- An agent can only invoke tools explicitly granted in its provisioned session — regardless of what tool servers exist in the environment
+- The gateway enforces this boundary cryptographically at invocation time
+
+This provides a stronger guarantee than per-server certificates: a legitimate tool server that has been compromised or substituted cannot be invoked outside the capability scope defined for the session. The attacker gains nothing by controlling a tool server the agent was never authorized to call.
+
+### 11.2. Two-Domain Topology
+
+SEAL-conformant deployments operating at production scale SHOULD separate tool invocation into two distinct trust domains:
+
+#### 11.2.1. Internal Tool Domain
+
+The **internal tool domain** handles platform-native operations — agent lifecycle management, execution control, workflow orchestration, secrets access, and other operations that operate within the orchestrator's trust boundary. Tools in this domain:
+
+- Are invoked directly by the orchestrator without traversing the SEAL gateway
+- Are authorized via the same `SecurityContext` capability model
+- Do not cross a network boundary to external systems
+
+#### 11.2.2. External Tool Domain (SEAL Gateway)
+
+The **external tool domain** handles all interactions with the external world — filesystem operations, web requests, CLI execution, third-party API calls, and any operation that crosses the trust boundary of the platform. Tools in this domain:
+
+- MUST be invoked exclusively through the SEAL gateway
+- MUST present a valid SEAL envelope on every request
+- Are subject to full gateway enforcement: signature verification, session binding, SecurityContext evaluation, JTI replay prevention, and timestamp freshness checks (see [Section 9.1](#91-replay-attack-prevention))
+
+The SEAL gateway is the **sole egress point** for external tool invocations. No agent MAY invoke external tools through any path that bypasses the gateway.
+
+### 11.3. Gateway Enforcement Requirements
+
+A conformant SEAL gateway implementing the external tool domain MUST enforce the following on every tool invocation, in order:
+
+1. **Session Lookup** — Locate the active session by `exec_id` extracted from the JWT. Reject if no active session exists.
+2. **Ed25519 Signature Verification** — Verify the envelope signature against the session's `public_key_b64`. Reject if invalid.
+3. **JWT Validation** — Validate the JWT signature, issuer, audience, and expiration. Reject if any check fails.
+4. **JTI Deduplication** — Reject if `jti` has been seen within the replay prevention window (see [Section 9.1](#91-replay-attack-prevention)).
+5. **Session Binding** — Verify that `exec_id` and `sub` in the JWT match the session record. Reject if mismatched.
+6. **Session Liveness** — Verify session status is `Active` and `expires_at` has not passed.
+7. **Tool Pattern Authorization** — Verify the requested tool name matches `allowed_tool_patterns` in the session record.
+8. **SecurityContext Policy Evaluation** — Evaluate the request against the session's `SecurityContext`: deny-list check → capability scan → default-deny (see [Section 5.3](#53-policy-evaluation-semantics)).
+
+Enforcement MUST be applied in the order listed. A failure at any step MUST result in rejection with the appropriate error code (see [Section 8.1](#81-error-codes)) and an audit event.
+
+### 11.4. Capability Patterns and Constraints
+
+Tool access within a `SecurityContext` is defined as capability patterns with optional constraints. Constraints narrow the permitted parameter space for a matched tool:
+
+| Constraint Type | Applicable Tools | Description |
+| --- | --- | --- |
+| `path_allowlist` | Filesystem tools | Permitted path prefixes |
+| `command_allowlist` | Shell/CLI tools | Permitted command names |
+| `subcommand_allowlist` | CLI tools with subcommands | Permitted subcommand names |
+| `domain_allowlist` | Web/HTTP tools | Permitted hostnames or domain patterns |
+| `max_response_size` | Any | Maximum response payload size in bytes |
+| `rate_limit` | Any | Maximum call frequency (calls per N seconds) |
+
+A tool invocation is permitted only if a matching capability exists AND all constraints for that capability are satisfied. See [Section 5.2](#52-capability-definition) for the full capability schema.
+
+### 11.5. Security Properties
+
+The capability-grant attestation model provides the following security properties:
+
+- **Execution Isolation** — A session is bound to a single execution. An agent cannot invoke tools under a different execution's session, even if it obtains that session's token.
+- **Capability Containment** — Compromise of an agent cannot expand its tool access beyond what the orchestrator provisioned. The agent cannot modify its own SecurityContext.
+- **Ephemeral Key Binding** — Each session uses a unique ephemeral Ed25519 keypair. Key compromise has a blast radius limited to one execution's TTL.
+- **No Ambient Authority** — There are no ambient credentials or default-allow paths. Every tool invocation is explicitly authorized by a capability grant.
+- **Replay Prevention** — JTI deduplication and timestamp freshness checks prevent replayed envelopes from succeeding even if intercepted.
+
+---
+
+## 12. Backward Compatibility
+
+### 12.1. Protocol Negotiation
 
 SEAL-capable Gateways SHOULD support both SEAL and legacy MCP clients during a migration period.
 
-#### 11.1.1. Capability Advertisement
+#### 12.1.1. Capability Advertisement
 
 During MCP initialization, Gateways SHOULD advertise SEAL support:
 
@@ -1423,16 +1510,16 @@ During MCP initialization, Gateways SHOULD advertise SEAL support:
 }
 ```
 
-#### 11.1.2. Client Detection
+#### 12.1.2. Client Detection
 
 Clients can detect SEAL support by:
 
 1. Checking for `extensions.seal.supported == true` in initialization response
 2. Checking if attestation endpoint responds with HTTP 200 (not 404)
 
-### 11.2. Legacy Client Support
+### 12.2. Legacy Client Support
 
-#### 11.2.1. Fallback Mode
+#### 12.2.1. Fallback Mode
 
 Gateways MAY allow legacy (non-SEAL) clients if configured with:
 
@@ -1450,7 +1537,7 @@ Gateways MAY allow legacy (non-SEAL) clients if configured with:
 
 **Security Warning**: This reduces security to pre-SEAL levels. RECOMMENDED only for transition periods.
 
-#### 11.2.2. Upgrade Path
+#### 12.2.2. Upgrade Path
 
 ```markdown
 Phase 1: Deploy SEAL-capable Gateway (seal.required = false)
@@ -1460,9 +1547,9 @@ Phase 4: Enable enforcement (seal.required = true)
 Phase 5: Remove legacy code paths
 ```
 
-### 11.3. Migration Strategy
+### 12.3. Migration Strategy
 
-#### 11.3.1. Client-Side Changes
+#### 12.3.1. Client-Side Changes
 
 Required changes for existing MCP clients:
 
@@ -1493,19 +1580,19 @@ Required changes for existing MCP clients:
 
 **Estimated Engineering Effort**: 1-2 days per client project
 
-#### 11.3.2. Tool Server Changes
+#### 12.3.2. Tool Server Changes
 
 **Good News**: Tool servers require ZERO changes. They continue to receive standard MCP JSON-RPC payloads after the Gateway unwraps Security Envelopes.
 
 ---
 
-## 12. Interoperability
+## 13. Interoperability
 
-### 12.1. Test Vectors
+### 13.1. Test Vectors
 
 This section provides test vectors for verifying SEAL implementations.
 
-#### 12.1.1. Test Vector 1: Valid Security Envelope
+#### 13.1.1. Test Vector 1: Valid Security Envelope
 
 **Ed25519 Keypair** (hex):
 
@@ -1572,7 +1659,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LWFnZW50LTEyMyIsInNjcCI6InJ
 }
 ```
 
-#### 12.1.2. Test Vector 2: Tampered Payload (Should Fail)
+#### 13.1.2. Test Vector 2: Tampered Payload (Should Fail)
 
 Take Test Vector 1 and modify the payload's `path` to `/etc/passwd`:
 
@@ -1598,7 +1685,7 @@ Take Test Vector 1 and modify the payload's `path` to `/etc/passwd`:
 
 **Expected Result**: Gateway MUST reject with `INVALID_SIGNATURE` error (signature does not match modified payload)
 
-#### 12.1.3. Test Vector 3: Expired Token
+#### 13.1.3. Test Vector 3: Expired Token
 
 Use Test Vector 1 but set `exp` claim to a past timestamp:
 
@@ -1614,7 +1701,7 @@ Use Test Vector 1 but set `exp` claim to a past timestamp:
 
 **Expected Result**: Gateway MUST reject with `TOKEN_EXPIRED` error
 
-### 12.2. Compliance Requirements
+### 13.2. Compliance Requirements
 
 A SEAL implementation is compliant if it:
 
@@ -1623,13 +1710,13 @@ A SEAL implementation is compliant if it:
 3. ✅ Enforces deny-by-default policy evaluation ([Section 5.3](#53-policy-evaluation-semantics))
 4. ✅ Rejects messages with timestamps older than 30 seconds
 5. ✅ Rejects expired Security Tokens
-6. ✅ Passes all test vectors in [Section 12.1](#121-test-vectors)
+6. ✅ Passes all test vectors in [Section 13.1](#131-test-vectors)
 
 ---
 
-## 13. IANA Considerations
+## 14. IANA Considerations
 
-### 13.1. Protocol Identifier Registry
+### 14.1. Protocol Identifier Registry
 
 IANA is requested to create a registry for SEAL protocol versions:
 
@@ -1641,7 +1728,7 @@ IANA is requested to create a registry for SEAL protocol versions:
 
 **Registration Procedure**: RFC Required
 
-### 13.2. Error Code Registry
+### 14.2. Error Code Registry
 
 IANA is requested to create a registry for SEAL error codes:
 
@@ -1660,7 +1747,7 @@ IANA is requested to create a registry for SEAL error codes:
 
 Initial registrations defined in [Section 8.1](#81-error-codes).
 
-### 13.3. JWT Claim Names Registry
+### 14.3. JWT Claim Names Registry
 
 IANA is requested to register the following JWT claim names in the JSON Web Token Claims Registry ([RFC 7519](https://www.rfc-editor.org/rfc/rfc7519.txt)):
 
@@ -1672,7 +1759,7 @@ IANA is requested to register the following JWT claim names in the JSON Web Toke
 | `tenant_id` | Multi-tenant routing identifier | RFC XXXX, Section 4.2.2 |
 | `nid` | Node identifier (infrastructure extension) | RFC XXXX, Section 10.2.2 |
 
-### 13.4. SecurityContext Registry
+### 14.4. SecurityContext Registry
 
 IANA is requested to create a registry for standard SecurityContext names:
 
@@ -1692,9 +1779,9 @@ IANA is requested to create a registry for standard SecurityContext names:
 
 ---
 
-## 14. References
+## 15. References
 
-### 14.1. Normative References
+### 15.1. Normative References
 
 [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, DOI 10.17487/RFC2119, March 1997,  
 <https://www.rfc-editor.org/info/rfc2119>
@@ -1711,7 +1798,7 @@ IANA is requested to create a registry for standard SecurityContext names:
 [MCP-SPEC] Anthropic, "Model Context Protocol Specification", November 2024,  
 <https://modelcontextprotocol.io/specification>
 
-### 14.2. Informative References
+### 15.2. Informative References
 
 [OWASP-AI-2026] OWASP Foundation, "OWASP AI Security and Privacy Guide", 2026,  
 <https://owasp.org/www-project-ai-security/>
@@ -2285,17 +2372,7 @@ The SEAL error code and message MUST be included in the gRPC status details for 
 
 The following topics are considered for future versions of SEAL:
 
-### F.1. Tool Server Attestation
-
-**Problem**: Clients currently trust that the Gateway forwards requests to genuine tool servers. A compromised Gateway could proxy to malicious servers.
-
-**Proposed Solution**:
-
-- Tool servers sign their responses with their own Ed25519 keys
-- Clients verify tool server signatures before accepting results
-- Gateway maintains allowlist of trusted tool server public keys (code signing, signed binaries)
-
-### F.2. Policy Language Standardization
+### F.1. Policy Language Standardization
 
 **Problem**: This RFC describes SecurityContext semantics but doesn't mandate a specific policy language.
 
@@ -2305,7 +2382,7 @@ The following topics are considered for future versions of SEAL:
 - Create JSON Schema for portable SecurityContext definitions
 - Enable cross-platform SecurityContext sharing
 
-### F.3. Multi-Party Trust
+### F.2. Multi-Party Trust
 
 **Problem**: Current trust model assumes a single trusted Gateway. In federated scenarios, multiple parties may need to collaborate.
 
@@ -2314,7 +2391,7 @@ The following topics are considered for future versions of SEAL:
 - Delegate tokens: Client A authorizes Client B to act on its behalf (OAuth 2.0-style token delegation)
 - Multi-signature envelopes: Require approval from multiple Gateways for high-risk operations
 
-### F.4. Hardware-Backed Attestation
+### F.3. Hardware-Backed Attestation
 
 **Problem**: Software-based workload identity verification can be spoofed by privileged attackers.
 
@@ -2324,7 +2401,7 @@ The following topics are considered for future versions of SEAL:
 - Support Intel SGX, AMD SEV, AWS Nitro Enclaves for confidential computing
 - Bind Security Tokens to hardware measurements (PCR values)
 
-### F.5. Rate Limit Enforcement Standardization
+### F.4. Rate Limit Enforcement Standardization
 
 **Problem**: RFC specifies `rate_limit` in capabilities but doesn't define algorithm details.
 
