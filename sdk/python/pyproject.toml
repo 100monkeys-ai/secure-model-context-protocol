@@ -19,7 +19,7 @@ classifiers = [
 keywords = ["seal", "mcp", "ai", "agents", "security"]
 dependencies = [
     "cryptography>=41.0.0",
-    "requests>=2.30.0",
+    "requests>=2.33.1",
     "pydantic>=2.4.0",
 ]
 dynamic = ["version"]
