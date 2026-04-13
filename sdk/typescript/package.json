@@ -28,7 +28,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
-    "@noble/ed25519": "^3.0.1"
+    "@noble/ed25519": "^3.1.0"
   },
   "overrides": {
     "brace-expansion": ">=5.0.5"
