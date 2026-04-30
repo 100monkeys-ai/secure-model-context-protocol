@@ -15,6 +15,9 @@ on:
       - 'sdk/typescript/**'
       - '.github/workflows/ci.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: sdk/typescript
