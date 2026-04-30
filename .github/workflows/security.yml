@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install pip-audit && pip install -e .
+        run: pip install "pip>=26.1" pip-audit && pip install -e .
       - name: Run pip-audit
         # CVE-2026-4539: pygments <=2.19.2 ReDoS in ANSI color parsing.
         # No upstream fix available yet. pygments is a transitive dep via rich.
