@@ -27,7 +27,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "pip>=26.1",
-    "pytest>=7.0.0",
+    "pytest>=9.0.3",
 ]
 
 [tool.hatch.version]
